@@ -6,17 +6,16 @@ load Fufy.mat % file containing all data for car
 %% CHANGING SECTION
 % Manually update the library for the vehicle
 
-m        = 9.4+9.4; % [kg] veicolo con mini PC e tutto il resto
-b        = l/2; % stima del nuovo CoG
-a        = l-b;
-J_CoG    = 9.4*a^2+9.4*b^2; % [kg*m^2]
+m        = 9.4+9.4; % [kg] massa veicolo con mini PC e tutto il resto
+b        = l/2; % rear axle distance to CoG
+a        = l-b; % front axle distance to CoG
+J_CoG    = 9.4*a^2+9.4*b^2; % Inertia axis z[kg*m^2]
 Fz_Front = 9.4*g; % [N]
 Fz_Rear  = 9.4*g; % [N]
 Fz_Tot   = Fz_Rear + Fz_Front; % [N] 
 % Second test: height of CoG
-Fz_rear  = 9.8*g;
 H = 160/1000; % [m] 
-h = (Fz_rear*l/(Fz_Tot)-(l-b))*cot(asin(H/l))+(R_r+R_f)/2; % [m] new CoG height
+h = (Fz_Rear*l/(Fz_Tot)-(l-b))*cot(asin(H/l))+(R_r+R_f)/2; % [m] new CoG height
 clear H Fz_rear Fz_Rear Fz_Front Fz_Tot
 
 %_____ Tires 
