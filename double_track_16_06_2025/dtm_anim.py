@@ -162,8 +162,6 @@ def update(frame):
 anim = FuncAnimation(fig, update, frames=len(anim_cog), interval=1000/FPS, blit=True)
 
 # anim.save('car_animation.gif', fps=FPS, dpi=50)  # save animation as gif
+# anim.save('car_animation.mp4', fps=FPS, extra_args=['-vcodec', 'libx264']) # save animation as mp4
 
-anim.save('car_animation.mp4', fps=FPS, extra_args=['-vcodec', 'libx264']) # save animation as mp4
-
-#show the animation
-plt.show()
+plt.show() # show the animation
