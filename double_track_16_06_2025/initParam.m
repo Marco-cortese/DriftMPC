@@ -1,6 +1,6 @@
 %% Workspace for Simulink Model
 % tommaso.belluco@studenti.unipd.it, 2055261
-clear; clc;close all;
+clear; clc; close all;
 load Fufy.mat % file containing all data for car
 
 %% CHANGING SECTION

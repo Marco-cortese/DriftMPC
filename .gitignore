@@ -23,6 +23,7 @@ codegen/
 
 # Simulink autosave extension
 *.autosave
+*.r2024a
 
 # Simulink cache files
 *.slxc
@@ -35,3 +36,9 @@ octave-workspace
 
 # Thumbnails
 ._*
+
+# others
+double_track_16_06_2025/DTM_out.mat
+*.gif
+*.mp4
+
