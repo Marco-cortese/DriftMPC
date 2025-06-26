@@ -15,7 +15,6 @@ yaw_rate0            = 0; % yaw rate [rad/s]
 %% SIMULATION AND RESULTS
 out                = sim("DTM_sim.slx");
 
-
 %% PLOT RESULTS
 tout = out.tout; % time vector
 pos_CoG = out.pos_CoG; % position of CoG
@@ -24,16 +23,13 @@ pos_front = out.pos_front; % position of front wheel
 steer = out.steer; % steering angle of the car
 u = out.u; % longitudinal velocity
 v = out.v; % lateral velocity;
+yaw_rate = out.yaw_rate; % angular velocity wrt the cog
+front_slip_angle = out.front_slip_angle; % front tires (left + right) slip angles
+rear_slip_angle = out.rear_slip_angle; % rear tires (left +right) slip angles
 
 % save everything in a mat file
-save('DTM_out.mat', 'tout', 'pos_CoG', 'pos_rear', 'pos_front', 'steer', 'u', 'v');
+save('DTM_out.mat', 'tout', 'pos_CoG', 'pos_rear', 'pos_front', 'steer', 'u', 'v', 'yaw_rate', 'front_slip_angle', 'rear_slip_angle');
 
-figure(1);
-plot(pos_CoG(:,1), pos_CoG(:,2)); hold on;
-plot(pos_rear(:,1), pos_rear(:,2));
-plot(pos_front(:,1), pos_front(:,2));
-xlabel('X Position [m]'); ylabel('Y Position [m]'); title('Trajectory of the Vehicle');
-axis equal; grid on; legend('CoG', 'Rear Wheel', 'Front Wheel');
-
-
-
+% run a python animation
+pyenv(Version="/home/mg/.pyenv/versions/3.12.11/bin/python"); % change this
+pyrunfile('dtm_anim.py')

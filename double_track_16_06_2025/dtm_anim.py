@@ -1,4 +1,5 @@
 import numpy as np
+from numpy import pi
 import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
 # from tqdm import tqdm
@@ -14,30 +15,37 @@ t = fufy['t'][0,0] # 'track width of the car, equal both sides'
 # Load the simulation out .mat file (created by running runSIM.m)
 d = loadmat('DTM_out.mat')
 
-tout =      d['tout'].reshape(-1)
-pos_CoG =   d['pos_CoG'] 
-pos_rear =  d['pos_rear'] 
-pos_front = d['pos_front'] 
-u =         d['u'].reshape(-1) 
-v =         d['v'].reshape(-1)
-steer =     d['steer'][0,0] # fixed steering for now
+tout =              d['tout'].reshape(-1)
+pos_CoG =           d['pos_CoG'] 
+pos_rear =          d['pos_rear'] 
+pos_front =         d['pos_front'] 
+u =                 d['u'].reshape(-1) # longitudinal velocity in m/s
+v =                 d['v'].reshape(-1) # lateral velocity in m/s
+yaw_rate =          d['yaw_rate'].reshape(-1) # yaw rate in rad/s
+front_slip_angle =  d['front_slip_angle'] # front tires (left + right) slip angles in rad
+rear_slip_angle =   d['rear_slip_angle'] # rear tires (left + right) slip angles in rad
+steer =             d['steer'][0,0] # fixed steering for now
 
-#  plot
-plt.figure(figsize=(10, 10))
-plt.plot(pos_CoG[:, 0], pos_CoG[:, 1], label='CoG', color='blue')
-plt.plot(pos_rear[:, 0], pos_rear[:, 1], label='Rear', color='red')
-plt.plot(pos_front[:, 0], pos_front[:, 1], label='Front', color='green')
-plt.xlabel('X Position')
-plt.ylabel('Y Position')
-plt.title('Trajectory')
-plt.legend()
-plt.axis('equal')
-# plt.show()
+front_slip_angle = np.mean(front_slip_angle, axis=1)  # average front slip angle for both tires
+rear_slip_angle = np.mean(rear_slip_angle, axis=1)  # average rear slip angle for both tires
+
+# #  plot
+# plt.figure(figsize=(10, 10))
+# plt.plot(pos_CoG[:, 0], pos_CoG[:, 1], label='CoG', color='blue')
+# plt.plot(pos_rear[:, 0], pos_rear[:, 1], label='Rear', color='red')
+# plt.plot(pos_front[:, 0], pos_front[:, 1], label='Front', color='green')
+# plt.xlabel('X Position')
+# plt.ylabel('Y Position')
+# plt.title('Trajectory')
+# plt.legend()
+# plt.axis('equal')
+# # plt.show()
 
 # create an animation 
 FPS = 60.0
 SPEED = 1.0 # speed multiplier for the animation
 
+# Function to get the car's corner points and wheel shapes in the global frame 
 def get_car_shapes(p_cog, p_rear, p_front, a, b, l, t, steer, size_mult=2): # -> car_corners_gf, wrl_gf, wrr_gf, wfl_gf, wfr_gf
     assert p_cog.shape == (2,), "p_cog must be a 2D vector"
     assert p_rear.shape == (2,), "p_rear must be a 2D vector"
@@ -117,13 +125,22 @@ def get_car_shapes(p_cog, p_rear, p_front, a, b, l, t, steer, size_mult=2): # ->
 fig, ax = plt.subplots(figsize=(10, 10))
 ax.set_xlim(np.min(pos_CoG[:, 0]) - 2, np.max(pos_CoG[:, 0]) + 2)
 ax.set_ylim(np.min(pos_CoG[:, 1]) - 2, np.max(pos_CoG[:, 1]) + 2)
-ax.plot(pos_CoG[:, 0], pos_CoG[:, 1])
-ax.plot(pos_rear[:, 0], pos_rear[:, 1])
-ax.plot(pos_front[:, 0], pos_front[:, 1])
-ax.set_xlabel('X Position')
-ax.set_ylabel('Y Position')
+# ax.plot(pos_CoG[:, 0], pos_CoG[:, 1])
+# ax.plot(pos_rear[:, 0], pos_rear[:, 1])
+# ax.plot(pos_front[:, 0], pos_front[:, 1])
+
+
+# slip = ax.scatter(pos_CoG[:, 0], pos_CoG[:, 1], c=np.abs(np.rad2deg(front_slip_angle)), s=2, cmap='viridis')
+# cbar = plt.colorbar(slip, ax=ax, label='Front slip angle α [deg]')
+
+slip = ax.scatter(pos_CoG[:, 0], pos_CoG[:, 1], c=np.abs(np.rad2deg(rear_slip_angle)), s=2, cmap='viridis')
+cbar = plt.colorbar(slip, ax=ax, label='Rear slip angle α [deg]')
+
+ax.set_xlabel('x [m]')
+ax.set_ylabel('y [m]')
 ax.set_title('Car Animation')
 ax.set_aspect('equal')
+plt.tight_layout()
 
 # create initial plots for the car and wheels
 car, wrl, wrr, wfl, wfr = get_car_shapes(pos_CoG[0], pos_rear[0], pos_front[0], a, b, l, t, steer)
@@ -154,7 +171,7 @@ def update(frame):
     wfl_plot.set_data(wfl[:, 0], wfl[:, 1])
     wfr_plot.set_data(wfr[:, 0], wfr[:, 1])
     
-    print(f'anim: [{frame+1}/{len(anim_cog)}] [{100*(frame+1)/len(anim_cog):.1f}%]         ', end='\r')
+    # print(f'anim: [{frame+1}/{len(anim_cog)}] [{100*(frame+1)/len(anim_cog):.1f}%]         ', end='\r')
 
     return car_plot, wrl_plot, wrr_plot, wfl_plot, wfr_plot
 
