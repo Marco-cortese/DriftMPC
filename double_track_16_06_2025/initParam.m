@@ -16,6 +16,8 @@ Fz_Tot   = Fz_Rear + Fz_Front; % [N]
 % Second test: height of CoG
 H = 160/1000; % [m] 
 h = (Fz_Rear*l/(Fz_Tot)-(l-b))*cot(asin(H/l))+(R_r+R_f)/2; % [m] new CoG height
+Fz_Front_nominal = Fz_Front; % for simulink 
+Fz_Rear_nominal = Fz_Rear; % for simulink
 clear H Fz_rear Fz_Rear Fz_Front Fz_Tot
 
 %_____ Tires 

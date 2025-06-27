@@ -11,11 +11,16 @@ u0                   = 0; % longitudinal velocity [m/s]
 v0                   = 0; % lateral velocity [m/s]
 yaw_rate0            = 0; % yaw rate [rad/s] 
 
+% testing
+constant_force = 9;
+constant_steer = deg2rad(15);
     
 %% SIMULATION AND RESULTS
-out                = sim("DTM_sim.slx");
+% out = sim("DTM_sim.slx"); % double track model simulation
+out = sim("STM_sim.slx"); % single track model simulation
 
-%% PLOT RESULTS
+
+%% SINGLE TRACK MODEL
 tout = out.tout; % time vector
 pos_CoG = out.pos_CoG; % position of CoG
 pos_rear = out.pos_rear; % position of rear wheel
