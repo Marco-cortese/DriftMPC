@@ -37,4 +37,4 @@ save('DTM_out.mat', 'tout', 'pos_CoG', 'pos_rear', 'pos_front', 'steer', 'u', 'v
 
 % run a python animation
 pyenv(Version="/home/mg/.pyenv/versions/3.12.11/bin/python"); % change this to your python path
-pyrunfile('dtm_anim.py')
+pyrunfile('car_anim.py')

@@ -43,3 +43,7 @@ double_track_16_06_2025/DTM_out.mat
 *.mp4
 
 DTM_out.mat
+
+# python
+__pycache__/
+*.pyc
