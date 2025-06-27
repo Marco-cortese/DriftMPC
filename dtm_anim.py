@@ -125,6 +125,7 @@ def get_car_shapes(p_cog, p_rear, p_front, a, b, l, t, steer, size_mult=2): # ->
 fig, ax = plt.subplots(figsize=(10, 10))
 ax.set_xlim(np.min(pos_CoG[:, 0]) - 2, np.max(pos_CoG[:, 0]) + 2)
 ax.set_ylim(np.min(pos_CoG[:, 1]) - 2, np.max(pos_CoG[:, 1]) + 2)
+ax.set_aspect('equal')
 # ax.plot(pos_CoG[:, 0], pos_CoG[:, 1])
 # ax.plot(pos_rear[:, 0], pos_rear[:, 1])
 # ax.plot(pos_front[:, 0], pos_front[:, 1])
@@ -134,13 +135,12 @@ ax.set_ylim(np.min(pos_CoG[:, 1]) - 2, np.max(pos_CoG[:, 1]) + 2)
 # cbar = plt.colorbar(slip, ax=ax, label='Front slip angle α [deg]')
 
 slip = ax.scatter(pos_CoG[:, 0], pos_CoG[:, 1], c=np.abs(np.rad2deg(rear_slip_angle)), s=2, cmap='viridis')
-cbar = plt.colorbar(slip, ax=ax, label='Rear slip angle α [deg]')
+cbar = plt.colorbar(slip, ax=ax, label='Rear slip angle α [deg]', orientation='horizontal')
 
 ax.set_xlabel('x [m]')
 ax.set_ylabel('y [m]')
 ax.set_title('Car Animation')
-ax.set_aspect('equal')
-plt.tight_layout()
+# plt.tight_layout()
 
 # create initial plots for the car and wheels
 car, wrl, wrr, wfl, wfr = get_car_shapes(pos_CoG[0], pos_rear[0], pos_front[0], a, b, l, t, steer)

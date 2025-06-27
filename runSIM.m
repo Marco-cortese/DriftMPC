@@ -36,5 +36,5 @@ rear_slip_angle = out.rear_slip_angle; % rear tires (left +right) slip angles
 save('DTM_out.mat', 'tout', 'pos_CoG', 'pos_rear', 'pos_front', 'steer', 'u', 'v', 'yaw_rate', 'front_slip_angle', 'rear_slip_angle');
 
 % run a python animation
-pyenv(Version="/home/mg/.pyenv/versions/3.12.11/bin/python"); % change this
+pyenv(Version="/home/mg/.pyenv/versions/3.12.11/bin/python"); % change this to your python path
 pyrunfile('dtm_anim.py')
