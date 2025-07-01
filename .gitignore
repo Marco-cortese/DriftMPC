@@ -47,3 +47,6 @@ DTM_out.mat
 # python
 __pycache__/
 *.pyc
+
+#acados
+acados
