@@ -9,3 +9,12 @@ Random notes on the project, might be useful.
 - qpoases gives an error in compilation (on Arch Linux) -> set to `OFF`
 - `CMAKE_POLICY_VERSION_MINIMUM=3.5` because I have a very new cmake, and some packages are too old,
   this is a safe workaround
+
+
+## Equilbrium
+Variables:
+- V: opt
+- β: fixed
+- r: fixed (from R turn)
+- Fx: opt
+- δ: opt
