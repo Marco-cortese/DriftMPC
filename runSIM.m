@@ -7,13 +7,13 @@ time_simulated       = 30; % [s] time of simulation
 
 %% INITIAL CONDITION
 
-u0                   = 1; % longitudinal velocity [m/s]
-v0                   = 8; % lateral velocity [m/s]
-yaw_rate0            = deg2rad(15); % yaw rate [rad/s] 
+u0                   = 4; % longitudinal velocity [m/s]
+v0                   = 0; % 8; % lateral velocity [m/s]
+yaw_rate0            = 0; %deg2rad(15); % yaw rate [rad/s] 
 %overwrite yaw
 gamma = 0;
 % testing
-constant_force = 9;
+constant_force = 5;
 constant_steer = deg2rad(15);
 
 %% SIMULATION AND RESULTS
@@ -37,5 +37,5 @@ rear_slip_angle = out.rear_slip_angle; % rear tires (left +right) slip angles
 save('DTM_out.mat', 'tout', 'pos_CoG', 'pos_rear', 'pos_front', 'steer', 'u', 'v', 'yaw_rate', 'front_slip_angle', 'rear_slip_angle');
 
 % run a python animation
-pyenv(Version="/home/mg/.pyenv/versions/3.12.11/bin/python"); % change this to your python path
-pyrunfile('car_anim.py')
+% pyenv(Version="/home/mg/.pyenv/versions/3.12.11/bin/python"); % change this to your python path
+% pyrunfile('car_anim.py')
