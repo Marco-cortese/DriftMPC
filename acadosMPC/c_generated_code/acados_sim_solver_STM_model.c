@@ -73,7 +73,7 @@ int STM_model_acados_sim_create(STM_model_sim_solver_capsule * capsule)
     const int np = STM_MODEL_NP;
     bool tmp_bool;
 
-    double Tsim = 0.001;
+    double Tsim = 0.01;
 
     external_function_opts ext_fun_opts;
     external_function_opts_set_to_default(&ext_fun_opts);
@@ -137,25 +137,13 @@ int STM_model_acados_sim_create(STM_model_sim_solver_capsule * capsule)
     sim_collocation_type collocation_type = GAUSS_LEGENDRE;
     sim_opts_set(STM_model_sim_config, STM_model_sim_opts, "collocation_type", &collocation_type);
 
-
+ 
     tmp_int = 4;
     sim_opts_set(STM_model_sim_config, STM_model_sim_opts, "num_stages", &tmp_int);
     tmp_int = 1;
     sim_opts_set(STM_model_sim_config, STM_model_sim_opts, "num_steps", &tmp_int);
-
-    // options that are not available to AcadosOcpSolver
-    //  (in OCP they will be determined by other options, like exact_hessian)
-    tmp_bool = true;
-    sim_opts_set(STM_model_sim_config, STM_model_sim_opts, "sens_forw", &tmp_bool);
-    tmp_bool = false;
-    sim_opts_set(STM_model_sim_config, STM_model_sim_opts, "sens_adj", &tmp_bool);
-    tmp_bool = false;
-    sim_opts_set(STM_model_sim_config, STM_model_sim_opts, "sens_algebraic", &tmp_bool);
-    tmp_bool = false;
-    sim_opts_set(STM_model_sim_config, STM_model_sim_opts, "sens_hess", &tmp_bool);
-    tmp_bool = true;
-    sim_opts_set(STM_model_sim_config, STM_model_sim_opts, "output_z", &tmp_bool);
-
+    tmp_bool = 0;
+    sim_opts_set(STM_model_sim_config, STM_model_sim_opts, "jac_reuse", &tmp_bool);
 
 
     // sim in / out
