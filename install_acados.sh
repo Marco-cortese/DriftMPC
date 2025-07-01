@@ -36,20 +36,21 @@ cmake \
     -DACADOS_WITH_PYTHON=ON \
     ..
 # Build acados
-make -j$(nproc)
+make install -j$(nproc)
 
 cd $ACADOS_ROOT # return to the root directory of acados
 
 ## python interface
 
-# activate the virtual environment
-if [ -d aca ]; then
-    echo "Removing existing virtual environment 'aca'..."
-    rm -rf aca
-fi
-python -m venv aca
-source aca/bin/activate
+# # activate the virtual environment
+# if [ -d aca ]; then
+#     echo "Removing existing virtual environment 'aca'..."
+#     rm -rf aca
+# fi
+# python -m venv aca
+# source aca/bin/activate
 
+source ~/ml/bin/activate
 echo -e "Installing Python interface for acados...\n\n\n"
 which python # check if the correct python is used
 echo -e "Python version: $(python --version), Python executable: $(which python)\n\n\n\n"
@@ -60,7 +61,8 @@ pip install -e $ACADOS_ROOT/interfaces/acados_template
 # Add the path to the compiled shared libraries libacados.so, libblasfeo.so, libhpipm.so to
 # LD_LIBRARY_PATH (default path is <acados_root/lib>) by running: 
 # export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:"$ACADOS_ROOT/lib"
-export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:"$ACADOS_ROOT/build/acados/":"$ACADOS_ROOT/build/external/blasfeo":"$ACADOS_ROOT/build/external/hpipm/"
+# export DYLD_LIBRARY_PATH=$DYLD_LIBRARY_PATH:"$ACADOS_ROOT/build/acados/":"$ACADOS_ROOT/build/external/blasfeo":"$ACADOS_ROOT/build/external/hpipm/"
+export DYLD_LIBRARY_PATH=$DYLD_LIBRARY_PATH:"$ACADOS_ROOT/lib"
 export ACADOS_SOURCE_DIR="$ACADOS_ROOT"
 
 # test the installation
