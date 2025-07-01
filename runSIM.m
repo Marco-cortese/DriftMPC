@@ -7,20 +7,18 @@ time_simulated       = 30; % [s] time of simulation
 
 %% INITIAL CONDITION
 
-u0                   = 10; % longitudinal velocity [m/s]
-v0                   = 2.2; % lateral velocity [m/s]
-yaw_rate0            = -deg2rad(10); % yaw rate [rad/s] 
-
+u0                   = 1; % longitudinal velocity [m/s]
+v0                   = 8; % lateral velocity [m/s]
+yaw_rate0            = deg2rad(15); % yaw rate [rad/s] 
 %overwrite yaw
 gamma = 0;
-
 % testing
-constant_force = 0;
+constant_force = 9;
 constant_steer = deg2rad(15);
-    
+
 %% SIMULATION AND RESULTS
 % out = sim("DTM_sim.slx"); % double track model simulation 
-out = sim("STM_sim.slx"); % single track model simulation
+out = sim("STM_sim.slx") ; % single track model simulation
     
 
 %% SINGLE TRACK MODEL
