@@ -68,7 +68,7 @@ t_rear              = t # [m] track width rear
 
 ####################################################################################################
 # tire model
-μf, μr = 0.5, 0.47   # [] friction coefficients front and rear
+μf, μr = 0.8, 0.8   # [] friction coefficients front and rear
 Cyf = 370.36;  # [N/rad] Cornering stiffness front tyre
 Cyr = 1134.05; # [N/rad] Cornering stiffness rear tyre
 def tire(α, Fx, Fz, μ, Cy): # tanh
@@ -81,7 +81,7 @@ def tire(α, Fx, Fz, μ, Cy): # tanh
 def f_αf(δ, v, β, r): return δ - arctan2(v*sin(β) + a*r, v*cos(β)) # front slip angle function
 def f_αr(δ, v, β, r): return -arctan2(v*sin(β) - b*r, v*cos(β)) # rear slip angle function
 
-def vel2beta(uvr): # -> Vβr
+def vel2beta(uvr): # -> vβr
     """Converts velocity components to sideslip angle and speed."""
     assert uvr.shape[-1] == 3, "Input must be a 3-element array [u, v, r]"
     uvr_shape = uvr.shape
@@ -91,14 +91,126 @@ def vel2beta(uvr): # -> Vβr
     β = np.arctan2(v, u)  # sideslip angle
     return np.stack([V, β, r], axis=-1).reshape(uvr_shape)  # reshape back to original shape if necessary
 
-def beta2vel(Vβr): # -> uvr
+def beta2vel(vβr): # -> uvr
     """Converts sideslip angle and speed to velocity components."""
-    assert Vβr.shape[-1] == 3, "Input must be a 3-element array [V, β, r]"
-    Vβr_shape = Vβr.shape
-    Vβr = Vβr.reshape(-1, 3)  # flatten the input to 2D if necessary
-    V, β, r = Vβr[:, 0], Vβr[:, 1], Vβr[:, 2]  # unpack speed, sideslip angle, and yaw rate
+    assert vβr.shape[-1] == 3, "Input must be a 3-element array [V, β, r]"
+    vβr_shape = vβr.shape
+    vβr = vβr.reshape(-1, 3)  # flatten the input to 2D if necessary
+    V, β, r = vβr[:, 0], vβr[:, 1], vβr[:, 2]  # unpack speed, sideslip angle, and yaw rate
     u = V * np.cos(β)  # longitudinal velocity component
     v = V * np.sin(β)  # lateral velocity component
-    return np.stack([u, v, r], axis=-1).reshape(Vβr_shape)  # reshape back to original shape if necessary
+    return np.stack([u, v, r], axis=-1).reshape(vβr_shape)  # reshape back to original shape if necessary
 
+def car_anim(vβrs, δs, dt, ic=(0.0,0.0,0.0), follow=False, fps=60.0, speed=1.0):
+    from matplotlib.animation import FuncAnimation
+    from IPython.display import HTML, display
 
+    assert vβrs.shape[-1] == 3, "Input must be a 3-element array [V, β, r]"
+    vs, βs, rs = vβrs[:, 0], vβrs[:, 1], vβrs[:, 2] # unpack the vβr array
+    n = vβrs.shape[0]  # number of time steps
+    assert δs.shape == (n,), "δs must be a 1D array with the same length as vβrs"
+    # integrate the velocity components to get x, y, ψ
+    xs, ys, ψs = np.zeros((n,)), np.zeros((n,)), np.zeros((n,))  # initialize arrays for x, y, ψ
+    xs[0], ys[0], ψs[0] = ic  # initial conditions
+    for i in range(1, n):
+        x, y, ψ, v, β, r = xs[i-1], ys[i-1], ψs[i-1], vs[i], βs[i], rs[i]  # unpack
+        xs[i] = x + v*np.cos(ψ+β)*dt  
+        ys[i] = y + v*np.sin(ψ+β)*dt
+        ψs[i] = ψ + r*dt  
+
+    def get_car_shapes(x, y, ψ, δ, size_mult=1.5): # -> car_corners_gf, wrl_gf, wrr_gf, wfl_gf, wfr_gf
+        """Get the car shapes in the global frame."""
+        p = np.array([x, y])  # position in the global frame
+        r1 = np.array([[np.cos(ψ), -np.sin(ψ)], [np.sin(ψ),  np.cos(ψ)]]) # Rotation matrix for the yaw angle
+
+        # create the car shape in the local frame
+        rl = size_mult*np.array([-b, +t/2]) # rear left
+        rr = size_mult*np.array([-b, -t/2]) # rear right
+        fl = size_mult*np.array([+a, +t/2]) # front left
+        fr = size_mult*np.array([+a, -t/2]) # front right
+        
+        # Create a polygon for the car shape
+        car_corners_lf = np.array([rl, rr, fr, fl, rl]).reshape(5, 2)  # Closed shape for the car
+
+        # Transform the car shape to the global frame
+        car_corners_gf = car_corners_lf @ r1.T + p  # rototranslation to global frame
+
+        # draw the 4 wheels as 4 rectangles
+        wheel_w, wheel_h = 0.1, 0.2  # wheel width and height
+        wheel = size_mult* np.array([  
+                            [-wheel_h/2, -wheel_w/2],
+                            [+wheel_h/2, -wheel_w/2],
+                            [+wheel_h/2, +wheel_w/2],
+                            [-wheel_h/2, +wheel_w/2],
+                            [-wheel_h/2, -wheel_w/2]])  # Closed shape for the wheel
+        
+        r2 = np.array([[np.cos(δ), -np.sin(δ)], [np.sin(δ),  np.cos(δ)]]) # Rotation matrix for the steering angle
+        wrl_lf = rl + wheel  # rear left wheel
+        wrr_lf = rr + wheel  # rear right wheel
+        wfl_lf = fl + wheel @ r2.T  # front left wheel
+        wfr_lf = fr + wheel @ r2.T  # front right wheel
+        
+        # rototranslation to global frame
+        wrl_gf = wrl_lf @ r1.T + p
+        wrr_gf = wrr_lf @ r1.T + p  
+        wfl_gf = wfl_lf @ r1.T + p
+        wfr_gf = wfr_lf @ r1.T + p
+
+        return car_corners_gf, wrl_gf, wrr_gf, wfl_gf, wfr_gf
+
+    # create the figure and axis
+    fig, ax = plt.subplots(figsize=(10, 6))
+    ax.set_aspect('equal')
+    ax.set_xlim(np.min(xs)-1, np.max(xs)+1)
+    ax.set_ylim(np.min(ys)-1, np.max(ys)+1)
+
+    slip = ax.scatter(xs, ys, c=np.abs(np.rad2deg(βs)), s=2, cmap=CM, vmin=0, vmax=50)
+    cbar = plt.colorbar(slip, ax=ax, label='β [deg]')
+
+    ax.set_xlabel('x [m]')
+    ax.set_ylabel('y [m]')
+    ax.set_title('Car Animation')
+    plt.tight_layout()
+
+    # create initial plots for the car and wheels
+    car, wrl, wrr, wfl, wfr = get_car_shapes(xs[0], ys[0], ψs[0], δs[0])
+
+    car_plot, = ax.plot(car[:, 0], car[:, 1], color='orange')
+    wrl_plot, = ax.plot(wrl[:, 0], wrl[:, 1], color='yellow')
+    wrr_plot, = ax.plot(wrr[:, 0], wrr[:, 1], color='yellow')
+    wfl_plot, = ax.plot(wfl[:, 0], wfl[:, 1], color='yellow')
+    wfr_plot, = ax.plot(wfr[:, 0], wfr[:, 1], color='yellow')
+
+    xs = xs[::int(fps/speed)]
+    ys = ys[::int(fps/speed)]
+    ψs = ψs[::int(fps/speed)]
+    δs = δs[::int(fps/speed)]
+
+    def update(frame):
+        # Update the car and wheels positions    
+        car, wrl, wrr, wfl, wfr = get_car_shapes(xs[frame], ys[frame], ψs[frame], δs[frame])
+        # Update the plots
+        car_plot.set_data(car[:, 0], car[:, 1])
+        wrl_plot.set_data(wrl[:, 0], wrl[:, 1])
+        wrr_plot.set_data(wrr[:, 0], wrr[:, 1])
+        wfl_plot.set_data(wfl[:, 0], wfl[:, 1])
+        wfr_plot.set_data(wfr[:, 0], wfr[:, 1])
+
+        if follow:
+            # set the limits of the axis
+            window_size = 8.0 # [m] size of the window around the car
+            ax.set_xlim(xs[frame] - window_size, xs[frame] + window_size)
+            ax.set_ylim(ys[frame] - window_size, ys[frame] + window_size)
+
+        return car_plot, wrl_plot, wrr_plot, wfl_plot, wfr_plot
+
+    # Create the animation
+    anim = FuncAnimation(fig, update, frames=len(xs), interval=1000/fps, blit=True)
+
+    plt.close(fig)  # Close the figure to avoid displaying it in Jupyter Notebook
+
+    # anim.save('car_animation.gif', fps=FPS, dpi=50)  # save animation as gif
+    # anim.save('car_animation.mp4', fps=fps, extra_args=['-vcodec', 'libx264']) # save animation as mp4
+
+    return display(HTML(anim.to_jshtml()))
+    # return display(HTML(anim.to_html5_video()))

@@ -3,7 +3,7 @@ initParam;
 %% Time of Simulation
 time_step_size       = 0.001; % [s] time step of a simulation
 
-time_simulated       = 3; % [s] time of simulation
+time_simulated       = 5; % [s] time of simulation
 
 %% INITIAL CONDITION
 
@@ -41,7 +41,3 @@ rear_slip_angle = out.rear_slip_angle; % rear tires (left +right) slip angles
 
 % save everything in a mat file
 save('DTM_out.mat', 'tout', 'pos_CoG', 'pos_rear', 'pos_front', 'steer', 'u', 'v', 'yaw_rate', 'front_slip_angle', 'rear_slip_angle');
-
-% run a python animation
-pyenv('Version', fullfile(getenv('HOME'), 'ml', 'bin', 'python'));
-pyrunfile('car_anim.py')
