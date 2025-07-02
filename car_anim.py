@@ -1,16 +1,5 @@
-import numpy as np
-from numpy import pi
-import matplotlib.pyplot as plt
+from initParam import *
 from matplotlib.animation import FuncAnimation
-# from tqdm import tqdm
-from scipy.io import loadmat # importing loadmat to read .mat files
-
-# vehicle parameters, from Fufy.mat
-fufy = loadmat('Fufy.mat')
-a = fufy['a'][0,0] # 'distance in meters from fron to CoG'
-b = fufy['b'][0,0] # 'distance in meters from rear to CoG'
-l = fufy['l'][0,0] # 'wheelbase in meters'
-t = fufy['t'][0,0] # 'track width of the car, equal both sides'
 
 # Load the simulation out .mat file (created by running runSIM.m)
 d = loadmat('DTM_out.mat')
