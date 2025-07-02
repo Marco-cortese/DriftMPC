@@ -16,7 +16,8 @@ plt.rcParams['figure.figsize'] = (10, 6)
 plt.rcParams['axes.grid'] = True
 plt.rcParams['grid.alpha'] = 0.3
 plt.rcParams['font.family'] = 'monospace'
-plt.rcParams['image.cmap'] = 'inferno'
+CM = 'jet' #'inferno'
+plt.rcParams['image.cmap'] = CM
 
 ################################################################################
 # from Fufy.mat
@@ -65,13 +66,39 @@ t_front             = t # [m] track width front
 t_rear              = t # [m] track width rear
 
 
+####################################################################################################
+# tire model
+μf, μr = 0.5, 0.47   # [] friction coefficients front and rear
+Cyf = 370.36;  # [N/rad] Cornering stiffness front tyre
+Cyr = 1134.05; # [N/rad] Cornering stiffness rear tyre
+def tire(α, Fx, Fz, μ, Cy): # tanh
+    assert Fx**2 <= μ**2 * Fz**2, "Longitudinal force exceeds maximum limit"
+    Fy_max = sqrt(μ**2 * Fz**2 - Fx**2) # maximum lateral force
+    αs = atan(Fy_max/Cy) # maximum slip angle
+    return Fy_max * np.tanh(α / αs) # tanh approximation
 
 # useful functions
-def diff_angle(a, b):
-    """Returns the difference between two angles in radians, normalized to [-pi, pi]."""
-    c1 = (a - b + π) % (2 * π) - π
-    c2 = np.arctan2(np.sin(a - b), np.cos(a - b))
-    assert np.allclose(c1, c2), f'{c1} != {c2}'
-    return c1
+def f_αf(δ, v, β, r): return δ - arctan2(v*sin(β) + a*r, v*cos(β)) # front slip angle function
+def f_αr(δ, v, β, r): return -arctan2(v*sin(β) - b*r, v*cos(β)) # rear slip angle function
 
-assert a == l - b, "a must be equal to l - b"
+def vel2beta(uvr): # -> Vβr
+    """Converts velocity components to sideslip angle and speed."""
+    assert uvr.shape[-1] == 3, "Input must be a 3-element array [u, v, r]"
+    uvr_shape = uvr.shape
+    uvr = uvr.reshape(-1, 3)  # flatten the input to 2D if necessary
+    u, v, r = uvr[:, 0], uvr[:, 1], uvr[:, 2]  # unpack velocity components
+    V = np.sqrt(u**2 + v**2)  # speed
+    β = np.arctan2(v, u)  # sideslip angle
+    return np.stack([V, β, r], axis=-1).reshape(uvr_shape)  # reshape back to original shape if necessary
+
+def beta2vel(Vβr): # -> uvr
+    """Converts sideslip angle and speed to velocity components."""
+    assert Vβr.shape[-1] == 3, "Input must be a 3-element array [V, β, r]"
+    Vβr_shape = Vβr.shape
+    Vβr = Vβr.reshape(-1, 3)  # flatten the input to 2D if necessary
+    V, β, r = Vβr[:, 0], Vβr[:, 1], Vβr[:, 2]  # unpack speed, sideslip angle, and yaw rate
+    u = V * np.cos(β)  # longitudinal velocity component
+    v = V * np.sin(β)  # lateral velocity component
+    return np.stack([u, v, r], axis=-1).reshape(Vβr_shape)  # reshape back to original shape if necessary
+
+
