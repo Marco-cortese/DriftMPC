@@ -40,6 +40,12 @@ make install -j$(nproc)
 
 cd $ACADOS_ROOT # return to the root directory of acados
 
+# fix the dynamic library loading on macOS
+if [[ "$OSTYPE" == "darwin"* ]]; then
+    echo "Fixing dynamic library loading on macOS..."
+    install_name_tool -add_rpath $ACADOS_ROOT/lib $ACADOS_ROOT/lib/libacados.dylib
+fi
+
 ## python interface
 
 # # activate the virtual environment
@@ -60,10 +66,10 @@ pip install -e $ACADOS_ROOT/interfaces/acados_template
 
 # Add the path to the compiled shared libraries libacados.so, libblasfeo.so, libhpipm.so to
 # LD_LIBRARY_PATH (default path is <acados_root/lib>) by running: 
-# export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:"$ACADOS_ROOT/lib"
-# export DYLD_LIBRARY_PATH=$DYLD_LIBRARY_PATH:"$ACADOS_ROOT/build/acados/":"$ACADOS_ROOT/build/external/blasfeo":"$ACADOS_ROOT/build/external/hpipm/"
 export DYLD_LIBRARY_PATH=$DYLD_LIBRARY_PATH:"$ACADOS_ROOT/lib"
 export ACADOS_SOURCE_DIR="$ACADOS_ROOT"
+
+
 
 # test the installation
 cd $ACADOS_ROOT/examples/acados_python/getting_started
