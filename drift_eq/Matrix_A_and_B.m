@@ -165,6 +165,7 @@ u_eq = V_eq * cos(beta_eq);
 v_eq = V_eq * sin(beta_eq);
 
 fprintf("Equilibrium --> u: %.2f, v: %.2f, r: %.2f, delta: %.2f, Fxr: %.2f \n", u_eq, v_eq, r_eq, delta_eq, Fxr_eq);
+fprintf("Equilibrium --> V: %.2f, beta: %.2f, r: %.2f, delta: %.2f, Fxr: %.2f \n", V_eq, beta_eq, r_eq, delta_eq, Fxr_eq);
 
 [A,B] = lin_syst_binetti(a,b,track,m,J,Fz,Cy,mu,delta_eq,Fxr_eq,V_eq,beta_eq,r_eq,ratio,fr,K_fr,Fxf);
 %[A,B] = lin_syst_binetti_2(a,b,track,m,J,Fz,Cy,mu,delta_eq,Fxr_eq,V_eq*cos(beta_eq),V_eq*sin(beta_eq),r_eq,ratio,fr,K_fr,Fxf);

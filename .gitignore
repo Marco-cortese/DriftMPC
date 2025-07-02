@@ -54,3 +54,4 @@ acados
 c_generated_code*
 *acados_ocp.json
 *acados_sim.json
+drift_eq/gainLQR_drift.mat
