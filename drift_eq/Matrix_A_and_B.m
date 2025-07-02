@@ -19,10 +19,10 @@ m           = 21.4;
 track       = 0.41;          % track width
 
 %_____ Resistance
-fr      = 0.049;
-K_fr    = 2.85;
+fr      = 0;% 0.049;
+K_fr    = 0; %2.85;
 Fxf     = 0;
-ratio   = 65/100;
+ratio   = 0.5; %65/100;
 % %% FORMULA
 % alpha_f = @(V,beta,r,delta) -atan((V.*sin(beta)+a*r)./(V.*cos(beta)))+delta;
 % alpha_r = @(V,beta,r) -atan((V.*sin(beta)-b*r)./(V.*cos(beta)));
