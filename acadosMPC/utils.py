@@ -5,7 +5,7 @@ import casadi as ca
 # to visualize videos in the notebook
 from IPython.display import Video
 
-mu_f, mu_r = 0.5, 0.47   # [] friction coefficients front and rear
+mu_f, mu_r = 0.8, 0.8   # [] friction coefficients front and rear
 Cyf = 370.36;  # [N/rad] Cornering stiffness front tyre
 Cyr = 1134.05; # [N/rad] Cornering stiffness rear tyre
 
@@ -35,9 +35,9 @@ def fiala(alpha, Fx, Fz, mu, Cy):
 # tanh approximation
 def fiala_tanh(alpha, Fx, Fz, mu, Cy):
     # Avoid invalid sqrt by clamping inside sqrt to >= 0
-    Fy_max = ca.sqrt(ca.fmax(0, mu**2 * Fz**2 - Fx**2))
-    alphas = ca.atan(Fy_max / Cy + 1e-6)  # avoid division by zero
-    return Fy_max * ca.tanh(alpha / (alphas + 1e-6))  # avoid divide-by-zero
+    Fy_max = ca.sqrt(ca.fmax(1e-6, mu**2 * Fz**2 - Fx**2))
+    alphas = ca.atan(Fy_max / Cy)  
+    return Fy_max * ca.tanh(alpha / alphas)  
 
 def STM_model()-> AcadosModel:
     
@@ -71,6 +71,8 @@ def STM_model()-> AcadosModel:
     alpha_r = -ca.arctan2(V*ca.sin(beta) - b*r, V*ca.cos(beta)) # slip angle rear
     Fyf = fiala_tanh(alpha_f, 0.0, Fz_Front, mu_f, Cyf) # lateral force front
     Fyr = fiala_tanh(alpha_r, Fx, Fz_Rear, mu_r, Cyr) # lateral force rear
+    # Fyf = fiala(alpha_f, 0.0, Fz_Front, mu_f, Cyf) # lateral force front
+    # Fyr = fiala(alpha_r, Fx, Fz_Rear, mu_r, Cyr) # lateral force rear
 
 
     # Single-track model ODEs in V,beta,r coordinates

@@ -18,8 +18,7 @@ def cot(x): return 1/np.tan(x) # cotangent function
 ################################################################################
 # from Fufy.mat
 l = 0.56 # [m] wheelbase
-t = 0.49 # [m] car width
-R_f, R_r = 0.095, 0.095 # [m] front and rear wheel radius
+t = 0.41 # [m] car width
 g = 9.81 # [m/s^2] gravity acceleration
 steering_ratio_f = 0.6 # [-] steering ratio front
 
@@ -27,36 +26,15 @@ steering_ratio_f = 0.6 # [-] steering ratio front
 ## CHANGING SECTION
 # Manually update the library for the vehicle
 
-m        = 9.4*2 # [kg] massa veicolo con mini PC e tutto il resto
+m        = 18.8 # [kg] massa veicolo con mini PC e tutto il resto
 b        = l/2 # rear axle distance to CoG
 a        = l-b # front axle distance to CoG
 J_CoG    = m/2*a**2+m/2*b**2 # Inertia axis z[kg*m^2]
-Fz_Front = m/2*g # [N]
-Fz_Rear  = m/2*g # [N]
+Fz_Front = m*g*b/l # [N]
+Fz_Rear  = m*g*a/l # [N]
 Fz_Tot   = Fz_Rear + Fz_Front # [N] 
 # Second test: height of CoG
 H = 160/1000 # [m] 
-h = (Fz_Rear*l/(Fz_Tot)-(l-b))*cot(np.asin(H/l))+(R_r+R_f)/2 # [m] new CoG height
+# h = (Fz_Rear*l/(Fz_Tot)-(l-b))*cot(np.asin(H/l))+(R_r+R_f)/2 # [m] new CoG height
 Fz_Front_nominal = Fz_Front # for simulink 
 Fz_Rear_nominal = Fz_Rear # for simulink
-
-#_____ Tires 
-R_fl                = R_f # [m] front left wheel radius
-R_fr                = R_f # [m] front right wheel radius
-R_rl                = R_r # [m] rear left wheel radius
-R_rr                = R_r # [m] rear right wheel radius
-
-#_____ starting position _ 
-x0                   = 0 # [m] distance CoG to y-axis (X0)
-y0                   = 0 # [m] distance CoG to x-axis (Y0)
-gamma                = np.pi/2 #[rad] starting angle respect to x-axis (gamma0)
-
-
-#___ Kinematic Condition
-Toe_fl              = -0*np.pi/180
-Toe_fr              = -Toe_fl
-Toe_rl              = 0*np.pi/180
-Toe_rr              = -Toe_rl 
-
-t_front             = t # [m] track width front
-t_rear              = t # [m] track width rear

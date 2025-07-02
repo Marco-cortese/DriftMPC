@@ -15,7 +15,7 @@ mu          = [muf,mur];
 Fzf         = m*g*b/l;       % front tyre static load (article)
 Fzr         = m*g*a/l;       % rear tyre static load (article)
 Fz          = [Fzf,Fzr];
-m           = 21.4;
+% m           = 21.4;
 track       = 0.41;          % track width
 
 %_____ Resistance
