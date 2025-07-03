@@ -216,10 +216,10 @@ def car_anim(vβrs, δs, dt, ic=(0.0,0.0,0.0), follow=False, fps=60.0, speed=1.0
     wfl_plot, = ax.plot(wfl[:, 0], wfl[:, 1], color='yellow')
     wfr_plot, = ax.plot(wfr[:, 0], wfr[:, 1], color='yellow')
 
-    xs = xs[::int(fps/speed)]
-    ys = ys[::int(fps/speed)]
-    ψs = ψs[::int(fps/speed)]
-    δs = δs[::int(fps/speed)]
+    xs = xs[::int(fps*speed)]
+    ys = ys[::int(fps*speed)]
+    ψs = ψs[::int(fps*speed)]
+    δs = δs[::int(fps*speed)]
 
     def update(frame):
         # Update the car and wheels positions    
