@@ -83,7 +83,7 @@ def f_αf(δ, v, β, r): return δ - np.arctan2(v*np.sin(β) + a*r, v*np.cos(β)
 def f_αr(δ, v, β, r): return -np.arctan2(v*np.sin(β) - b*r, v*np.cos(β)) # rear slip angle function
 
 # state space model
-def d_vβr(vβr, δ, Fx): 
+def d_vβr(vβr, Fx, δ):  # -> vβr dot
     v, β, r = vβr # unpack the state vector
     # assert v >= 0, "Velocity must be non-negative" # ensure velocity is non-negative
     if v < 0.001: v = 0.001 # avoid division by zero
@@ -97,10 +97,10 @@ def d_vβr(vβr, δ, Fx):
     ])
 
 def stm_rk4(vβr, Fx, δ, dt=1e-3): # runge-kutta 4th order method
-    k1 = d_vβr(vβr, δ, Fx) * dt
-    k2 = d_vβr(vβr + k1/2, δ, Fx) * dt
-    k3 = d_vβr(vβr + k2/2, δ, Fx) * dt
-    k4 = d_vβr(vβr + k3, δ, Fx) * dt
+    k1 = d_vβr(vβr, Fx, δ) * dt
+    k2 = d_vβr(vβr + k1/2, Fx, δ) * dt
+    k3 = d_vβr(vβr + k2/2, Fx, δ) * dt
+    k4 = d_vβr(vβr + k3, Fx, δ) * dt
     return vβr + (k1 + 2*k2 + 2*k3 + k4) / 6 # update the state vector
 
 def sim_stm_fixed_u(vβr0, Fx, δ, sim_t=1, dt=1e-3): # simulate the STM
@@ -109,10 +109,10 @@ def sim_stm_fixed_u(vβr0, Fx, δ, sim_t=1, dt=1e-3): # simulate the STM
     # initialize the state vector
     state = np.zeros((n_steps, 3)) 
     state[0] = vβr0 # initial state in v,β,r format
-    print(f"Initial state: {state[0]} [v,β,r], Fx={Fx}, δ={δ}") # print the initial state in v,β,r format
+    print(f"Initial state: {state[0]} [v,β,r], Fx={Fx:.2f}, δ={δ:.2f}") # print the initial state in v,β,r format
     # run the simulation
     for i in range(1, n_steps):
-        state[i] = stm_rk4(state[i-1], δ, Fx, dt) # update the state vector  
+        state[i] = stm_rk4(state[i-1], Fx, δ, dt) # update the state vector  
     print(f"Final state:   {state[-1]} [v,β,r]") # print the final state in v,β,r format
     return state
 
@@ -247,5 +247,5 @@ def car_anim(vβrs, δs, dt, ic=(0.0,0.0,0.0), follow=False, fps=60.0, speed=1.0
     # anim.save('car_animation.gif', fps=FPS, dpi=50)  # save animation as gif
     # anim.save('car_animation.mp4', fps=fps, extra_args=['-vcodec', 'libx264']) # save animation as mp4
 
-    return display(HTML(anim.to_jshtml()))
-    # return display(HTML(anim.to_html5_video()))
+    # return display(HTML(anim.to_jshtml()))
+    return display(HTML(anim.to_html5_video()))
