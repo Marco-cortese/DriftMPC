@@ -4,8 +4,8 @@
 # imports
 import numpy as np
 # useful functions from numpy (code more readable for matlab users)
-from numpy import pi as π, sqrt, cos, sin, exp, tan, arctan, atan, arctan2, atan2, arcsin, asin, abs, sign
-def cot(x): return 1/tan(x) # cotangent function
+π = 3.14159265358979323846264338327950288419716939937510582
+def cot(x): return 1/np.tan(x) # cotangent function
 np.set_printoptions(precision=6, formatter={'float': '{:+.6f}'.format}) # for better readability with sign
 from scipy.io import loadmat # importing loadmat to read .mat files
 from tqdm import tqdm # for progress bar
@@ -40,7 +40,7 @@ Fz_Rear  = 9.4*g # [N]
 Fz_Tot   = Fz_Rear + Fz_Front # [N] 
 # Second test: height of CoG
 H = 160/1000 # [m] 
-h = (Fz_Rear*l/(Fz_Tot)-(l-b))*cot(asin(H/l))+(R_r+R_f)/2 # [m] new CoG height
+h = (Fz_Rear*l/(Fz_Tot)-(l-b))*cot(np.asin(H/l))+(R_r+R_f)/2 # [m] new CoG height
 Fz_Front_nominal = Fz_Front # for simulink 
 Fz_Rear_nominal = Fz_Rear # for simulink
 
@@ -68,18 +68,53 @@ t_rear              = t # [m] track width rear
 
 ####################################################################################################
 # tire model
-μf, μr = 0.8, 0.8   # [] friction coefficients front and rear
+# μf, μr = 0.8, 0.8   # [] friction coefficients front and rear
+μf, μr = 0.5, 0.5   # [] friction coefficients front and rear
 Cyf = 370.36;  # [N/rad] Cornering stiffness front tyre
 Cyr = 1134.05; # [N/rad] Cornering stiffness rear tyre
 def tire(α, Fx, Fz, μ, Cy): # tanh
     assert Fx**2 <= μ**2 * Fz**2, "Longitudinal force exceeds maximum limit"
-    Fy_max = sqrt(μ**2 * Fz**2 - Fx**2) # maximum lateral force
-    αs = atan(Fy_max/Cy) # maximum slip angle
+    Fy_max = np.sqrt(μ**2 * Fz**2 - Fx**2) # maximum lateral force
+    αs = np.atan(Fy_max/Cy) # maximum slip angle
     return Fy_max * np.tanh(α / αs) # tanh approximation
 
 # useful functions
-def f_αf(δ, v, β, r): return δ - arctan2(v*sin(β) + a*r, v*cos(β)) # front slip angle function
-def f_αr(δ, v, β, r): return -arctan2(v*sin(β) - b*r, v*cos(β)) # rear slip angle function
+def f_αf(δ, v, β, r): return δ - np.arctan2(v*np.sin(β) + a*r, v*np.cos(β)) # front slip angle function
+def f_αr(δ, v, β, r): return -np.arctan2(v*np.sin(β) - b*r, v*np.cos(β)) # rear slip angle function
+
+# state space model
+def d_vβr(vβr, δ, Fx): 
+    v, β, r = vβr # unpack the state vector
+    # assert v >= 0, "Velocity must be non-negative" # ensure velocity is non-negative
+    if v < 0.001: v = 0.001 # avoid division by zero
+    Fyf = tire(f_αf(δ,v,β,r), 0.0, Fz_Front, μf, Cyf) # lateral force front
+    Fyr = tire(f_αr(δ,v,β,r), Fx, Fz_Rear, μr, Cyr) # lateral force rear
+    Fxr = Fx # rear longitudinal force
+    return np.array([ # equations of motion
+        (-Fyf*np.sin(δ-β) + Fxr*np.cos(β) + Fyr*np.sin(β)) / m, # V dot
+        (+Fyf*np.cos(δ-β) - Fxr*np.sin(β) + Fyr*np.cos(β)) / (m*v) - r, # β dot
+        (a*Fyf*np.cos(δ) - b*Fyr) / J_CoG # r dot
+    ])
+
+def stm_rk4(vβr, Fx, δ, dt=1e-3): # runge-kutta 4th order method
+    k1 = d_vβr(vβr, δ, Fx) * dt
+    k2 = d_vβr(vβr + k1/2, δ, Fx) * dt
+    k3 = d_vβr(vβr + k2/2, δ, Fx) * dt
+    k4 = d_vβr(vβr + k3, δ, Fx) * dt
+    return vβr + (k1 + 2*k2 + 2*k3 + k4) / 6 # update the state vector
+
+def sim_stm_fixed_u(vβr0, Fx, δ, sim_t=1, dt=1e-3): # simulate the STM
+    # simulate the STM for sim_t seconds
+    n_steps = int(sim_t/dt) # number of steps in the simulation
+    # initialize the state vector
+    state = np.zeros((n_steps, 3)) 
+    state[0] = vβr0 # initial state in v,β,r format
+    print(f"Initial state: {state[0]} [v,β,r], Fx={Fx}, δ={δ}") # print the initial state in v,β,r format
+    # run the simulation
+    for i in range(1, n_steps):
+        state[i] = stm_rk4(state[i-1], δ, Fx, dt) # update the state vector  
+    print(f"Final state:   {state[-1]} [v,β,r]") # print the final state in v,β,r format
+    return state
 
 def vel2beta(uvr): # -> vβr
     """Converts velocity components to sideslip angle and speed."""
