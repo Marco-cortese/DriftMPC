@@ -2,7 +2,12 @@
 
 # This script installs acados following the instructions from the official acados documentation.
 
-echo "Installing acados..."
+
+curr_dir=$(pwd)
+installation_dir="$HOME/repos" # Change this to your desired installation directory
+
+cd $installation_dir
+echo "Installing acados... in $installation_dir"
 if [ -d "acados" ]; then
     echo "Removing existing acados directory..."
     rm -rf acados
