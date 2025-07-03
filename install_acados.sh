@@ -33,7 +33,9 @@ cmake \
     -DCMAKE_BUILD_TYPE=Release \
     -DACADOS_WITH_QPOASES=ON \
     -DACADOS_WITH_DAQP=ON \
-    -DACADOS_WITH_PYTHON=ON \
+    -DACADOS_WITH_OPENMP=ON \
+    -DCMAKE_C_FLAGS="-Wno-incompatible-pointer-types" \
+    -DCMAKE_INSTALL_RPATH="$ACADOS_ROOT/lib" \
     ..
 # Build acados
 make install -j$(nproc)
@@ -56,7 +58,7 @@ fi
 # python -m venv aca
 # source aca/bin/activate
 
-source ~/ml/bin/activate
+source $HOME/ml/bin/activate
 echo -e "Installing Python interface for acados...\n\n\n"
 which python # check if the correct python is used
 echo -e "Python version: $(python --version), Python executable: $(which python)\n\n\n\n"
@@ -64,10 +66,16 @@ echo -e "Python version: $(python --version), Python executable: $(which python)
 pip install -e $ACADOS_ROOT/interfaces/acados_template
 
 
-# Add the path to the compiled shared libraries libacados.so, libblasfeo.so, libhpipm.so to
+# Add the path to the compiled shared libraries libacados.so, libblasfeo.so, libhpipm.so  to
 # LD_LIBRARY_PATH (default path is <acados_root/lib>) by running: 
-export DYLD_LIBRARY_PATH=$DYLD_LIBRARY_PATH:"$ACADOS_ROOT/lib"
 export ACADOS_SOURCE_DIR="$ACADOS_ROOT"
+if [[ "$OSTYPE" == "darwin"* ]]; then
+    export DYLD_LIBRARY_PATH=$DYLD_LIBRARY_PATH:"$ACADOS_ROOT/lib"
+elif [[ "$OSTYPE" == "linux-gnu"* ]]; then
+    echo "Adding acados library path to LD_LIBRARY_PATH..."
+    export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:"$ACADOS_ROOT/lib"
+fi
+
 
 
 
