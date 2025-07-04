@@ -40,7 +40,7 @@ Fz_Rear  = 9.4*g # [N]
 Fz_Tot   = Fz_Rear + Fz_Front # [N] 
 # Second test: height of CoG
 H = 160/1000 # [m] 
-h = (Fz_Rear*l/(Fz_Tot)-(l-b))*cot(np.asin(H/l))+(R_r+R_f)/2 # [m] new CoG height
+h = (Fz_Rear*l/(Fz_Tot)-(l-b))/np.tan(np.asin(H/l))+(R_r+R_f)/2 # [m] new CoG height
 Fz_Front_nominal = Fz_Front # for simulink 
 Fz_Rear_nominal = Fz_Rear # for simulink
 

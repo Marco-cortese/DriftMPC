@@ -68,7 +68,7 @@ echo -e "Installing Python interface for acados...\n\n\n"
 which python # check if the correct python is used
 echo -e "Python version: $(python --version), Python executable: $(which python)\n\n\n\n"
 
-pip install -e $ACADOS_ROOT/interfaces/acados_template
+pip install $ACADOS_ROOT/interfaces/acados_template
 
 
 # Add the path to the compiled shared libraries libacados.so, libblasfeo.so, libhpipm.so  to

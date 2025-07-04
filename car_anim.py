@@ -1,4 +1,4 @@
-from initParam import *
+from mg_utils import *
 from matplotlib.animation import FuncAnimation
 
 # Load the simulation out .mat file (created by running runSIM.m)
