@@ -5,14 +5,13 @@
 
 curr_dir=$(pwd)
 installation_dir="$HOME/repos" # Change this to your desired installation directory
-
 cd $installation_dir
+
 echo "Installing acados... in $installation_dir"
 if [ -d "acados" ]; then
     echo "Removing existing acados directory..."
     rm -rf acados
 fi
-
 # Clone the acados repository
 git clone https://github.com/acados/acados.git
 
@@ -33,15 +32,27 @@ mkdir -p build
 cd build
 
 # Configure the build
-cmake \
-    -DCMAKE_POLICY_VERSION_MINIMUM=3.5 \
-    -DCMAKE_BUILD_TYPE=Release \
-    -DACADOS_WITH_QPOASES=ON \
-    -DACADOS_WITH_DAQP=ON \
-    -DACADOS_WITH_OPENMP=ON \
-    -DCMAKE_C_FLAGS="-Wno-incompatible-pointer-types" \
-    -DCMAKE_INSTALL_RPATH="$ACADOS_ROOT/lib" \
-    ..
+if [[ "$OSTYPE" == "darwin"* ]]; then
+    echo "Configuring build for macOS..."
+    cmake \
+        -DCMAKE_POLICY_VERSION_MINIMUM=3.5 \
+        -DCMAKE_BUILD_TYPE=Release \
+        -DACADOS_WITH_QPOASES=ON \
+        -DACADOS_WITH_DAQP=ON \
+        -DACADOS_WITH_OPENMP=ON \
+        ..
+elif [[ "$OSTYPE" == "linux-gnu"* ]]; then
+    echo "Configuring build for Linux..."
+    cmake \
+        -DCMAKE_POLICY_VERSION_MINIMUM=3.5 \
+        -DCMAKE_BUILD_TYPE=Release \
+        -DACADOS_WITH_QPOASES=ON \
+        -DACADOS_WITH_DAQP=ON \
+        -DACADOS_WITH_OPENMP=ON \
+        -DCMAKE_C_FLAGS="-Wno-incompatible-pointer-types" \
+        -DCMAKE_INSTALL_RPATH="$ACADOS_ROOT/lib" \
+        ..
+fi
 # Build acados
 make install -j$(nproc)
 

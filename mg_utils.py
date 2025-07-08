@@ -40,7 +40,7 @@ Fz_Rear  = 9.4*g # [N]
 Fz_Tot   = Fz_Rear + Fz_Front # [N] 
 # Second test: height of CoG
 H = 160/1000 # [m] 
-h = (Fz_Rear*l/(Fz_Tot)-(l-b))*cot(np.asin(H/l))+(R_r+R_f)/2 # [m] new CoG height
+h = (Fz_Rear*l/(Fz_Tot)-(l-b))/np.tan(np.asin(H/l))+(R_r+R_f)/2 # [m] new CoG height
 Fz_Front_nominal = Fz_Front # for simulink 
 Fz_Rear_nominal = Fz_Rear # for simulink
 
@@ -65,18 +65,24 @@ Toe_rr              = -Toe_rl
 t_front             = t # [m] track width front
 t_rear              = t # [m] track width rear
 
-
 ####################################################################################################
 # tire model
 # μf, μr = 0.8, 0.8   # [] friction coefficients front and rear
 μf, μr = 0.5, 0.5   # [] friction coefficients front and rear
 Cyf = 370.36;  # [N/rad] Cornering stiffness front tyre
 Cyr = 1134.05; # [N/rad] Cornering stiffness rear tyre
-def tire(α, Fx, Fz, μ, Cy): # tanh
+def fiala_tanh_np(α, Fx, Fz, μ, Cy): # tanh fiala approximation
     assert Fx**2 <= μ**2 * Fz**2, "Longitudinal force exceeds maximum limit"
     Fy_max = np.sqrt(μ**2 * Fz**2 - Fx**2) # maximum lateral force
     αs = np.atan(Fy_max/Cy) # maximum slip angle
     return Fy_max * np.tanh(α / αs) # tanh approximation
+def fiala_np(α, Fx, Fz, μ, Cy):
+    Fy_max = np.sqrt(μ**2 * Fz**2 - Fx**2) # maximum lateral force
+    Fy_lin = Cy * np.tan(α) - Cy**2 * np.abs(np.tan(α)) * np.tan(α) / (3 * Fy_max) + Cy**3 * np.tan(α)**3 / (27 * Fy_max**2)
+    Fy_sat = Fy_max * np.sign(α)
+    return np.where(np.abs(α) < np.atan(3*Fy_max/Cy), Fy_lin, Fy_sat)
+# def tire(α, Fx, Fz, μ, Cy): return fiala_tanh_np(α, Fx, Fz, μ, Cy) # choose the tire model (fiala or fiala_tanh)
+def tire(α, Fx, Fz, μ, Cy): return fiala_np(α, Fx, Fz, μ, Cy) # choose the tire model (fiala or fiala_tanh)
 
 # useful functions
 def f_αf(δ, v, β, r): return δ - np.arctan2(v*np.sin(β) + a*r, v*np.cos(β)) # front slip angle function
@@ -103,17 +109,17 @@ def stm_rk4(vβr, Fx, δ, dt=1e-3): # runge-kutta 4th order method
     k4 = d_vβr(vβr + k3, Fx, δ) * dt
     return vβr + (k1 + 2*k2 + 2*k3 + k4) / 6 # update the state vector
 
-def sim_stm_fixed_u(vβr0, Fx, δ, sim_t=1, dt=1e-3): # simulate the STM
+def sim_stm_fixed_u(vβr0, Fx, δ, sim_t=1, dt=1e-3, verbose=False): # simulate the STM
     # simulate the STM for sim_t seconds
     n_steps = int(sim_t/dt) # number of steps in the simulation
     # initialize the state vector
     state = np.zeros((n_steps, 3)) 
     state[0] = vβr0 # initial state in v,β,r format
-    print(f"Initial state: {state[0]} [v,β,r], Fx={Fx:.2f}, δ={δ:.2f}") # print the initial state in v,β,r format
+    if verbose: print(f"Initial state: {state[0]} [v,β,r], Fx={Fx:.2f}, δ={δ:.2f}") # print the initial state in v,β,r format
     # run the simulation
     for i in range(1, n_steps):
         state[i] = stm_rk4(state[i-1], Fx, δ, dt) # update the state vector  
-    print(f"Final state:   {state[-1]} [v,β,r]") # print the final state in v,β,r format
+    if verbose: print(f"Final state:   {state[-1]} [v,β,r]") # print the final state in v,β,r format
     return state
 
 def vel2beta(uvr): # -> vβr
