@@ -12,7 +12,7 @@ Cyr = 1134.05; # [N/rad] Cornering stiffness rear tyre
 
 def fiala(alpha, Fx, Fz, mu, Cy):
     # Ensure symbolic compatibility
-    Fy_max = ca.sqrt(mu**2 * Fz**2 - Fx**2)
+    Fy_max = ca.sqrt(ca.fmax(1e-6, mu**2 * Fz**2 - Fx**2))
     alphas = ca.atan(3 * Fy_max / Cy)
 
     tan_alpha = ca.tan(alpha)
@@ -47,8 +47,8 @@ def STM_model()-> AcadosModel:
     nu = 2 # inputs: Fx, delta
 
     # Differential states 
-    V       = ca.SX.sym('V', 1, 1)  # longitudinal velocity of the car 
-    beta    = ca.SX.sym('beta', 1, 1)  # lateral velocity of the car
+    V       = ca.SX.sym('V', 1, 1)  # total velocity of the car 
+    beta    = ca.SX.sym('beta', 1, 1)  # sideslip angle of the car
     r       = ca.SX.sym('r', 1, 1)  # yaw rate of the car
 
     x = ca.vertcat(V,beta,r)  # state vector
