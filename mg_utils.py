@@ -92,7 +92,7 @@ def f_αf(δ, v, β, r): return δ - np.arctan2(v*np.sin(β) + a*r, v*np.cos(β)
 def f_αr(δ, v, β, r): return -np.arctan2(v*np.sin(β) - b*r, v*np.cos(β)) # rear slip angle function
 
 # state space model
-def d_vβr(vβr, Fx, δ):  # -> vβr dot
+def d_vβr(vβr, δ, Fx):  # -> vβr dot
     v, β, r = vβr # unpack the state vector
     # assert v >= 0, "Velocity must be non-negative" # ensure velocity is non-negative
     if v < 0.001: v = 0.001 # avoid division by zero
@@ -105,23 +105,23 @@ def d_vβr(vβr, Fx, δ):  # -> vβr dot
         (a*Fyf*np.cos(δ) - b*Fyr) / J_CoG # r dot
     ])
 
-def stm_rk4(vβr, Fx, δ, dt=1e-3): # runge-kutta 4th order method
-    k1 = d_vβr(vβr, Fx, δ) * dt
-    k2 = d_vβr(vβr + k1/2, Fx, δ) * dt
-    k3 = d_vβr(vβr + k2/2, Fx, δ) * dt
-    k4 = d_vβr(vβr + k3, Fx, δ) * dt
+def stm_rk4(vβr, δ, Fx, dt=1e-3): # runge-kutta 4th order method
+    k1 = d_vβr(vβr, δ, Fx) * dt
+    k2 = d_vβr(vβr + k1/2, δ, Fx) * dt
+    k3 = d_vβr(vβr + k2/2, δ, Fx) * dt
+    k4 = d_vβr(vβr + k3, δ, Fx) * dt
     return vβr + (k1 + 2*k2 + 2*k3 + k4) / 6 # update the state vector
 
-def sim_stm_fixed_u(vβr0, Fx, δ, sim_t=1, dt=1e-3, verbose=False): # simulate the STM
+def sim_stm_fixed_u(vβr0, δ, Fx, sim_t=1, dt=1e-3, verbose=False): # simulate the STM
     # simulate the STM for sim_t seconds
     n_steps = int(sim_t/dt) # number of steps in the simulation
     # initialize the state vector
     state = np.zeros((n_steps, 3)) 
     state[0] = vβr0 # initial state in v,β,r format
-    if verbose: print(f"Initial state: {state[0]} [v,β,r], Fx={Fx:.2f}, δ={δ:.2f}") # print the initial state in v,β,r format
+    if verbose: print(f"Initial state: {state[0]} [v,β,r], δ={δ:.2f}, Fx={Fx:.2f}") # print the initial state in v,β,r format
     # run the simulation
     for i in range(1, n_steps):
-        state[i] = stm_rk4(state[i-1], Fx, δ, dt) # update the state vector  
+        state[i] = stm_rk4(state[i-1], δ, Fx, dt) # update the state vector  
     if verbose: print(f"Final state:   {state[-1]} [v,β,r]") # print the final state in v,β,r format
     return state
 
@@ -151,14 +151,14 @@ def car_anim(xs, us, dt, ic=(0.0,0.0,0.0), follow=False, fps=60.0, speed=1.0, ti
 
     assert xs.shape[-1] == 3, "Input must be a 3-element array [V, β, r]"
     vs, βs, rs = xs[:, 0], xs[:, 1], xs[:, 2] # unpack the vβr array
-    Fxs, δs = us[:, 0], us[:, 1]  # unpack the control inputs
+    δs, Fxs = us[:, 0], us[:, 1]  # unpack the control inputs
     drifts = 180/π*np.abs(βs + δs) # "amount of drift" as the sum of sideslip angle and steering angle 
     n = xs.shape[0]  # number of time steps
     assert δs.shape == (n,), "δs must be a 1D array with the same length as xs"
     # integrate the velocity components to get x, y, ψ
     xs, ys, ψs = np.zeros((n,)), np.zeros((n,)), np.zeros((n,))  # initialize arrays for x, y, ψ
     xs[0], ys[0], ψs[0] = ic  # initial conditions
-    for i in range(1, n):
+    for i in range(1, n): # integrate the velocity components
         x, y, ψ, v, β, r = xs[i-1], ys[i-1], ψs[i-1], vs[i], βs[i], rs[i]  # unpack
         xs[i] = x + v*np.cos(ψ+β)*dt  
         ys[i] = y + v*np.sin(ψ+β)*dt
@@ -210,7 +210,7 @@ def car_anim(xs, us, dt, ic=(0.0,0.0,0.0), follow=False, fps=60.0, speed=1.0, ti
     ax[1].set_xlim(np.min(xs)-1, np.max(xs)+1)
     ax[1].set_ylim(np.min(ys)-1, np.max(ys)+1)
 
-    slip = ax[1].scatter(xs, ys, c=np.abs(np.rad2deg(βs)), s=2, cmap=CM, vmin=0, vmax=30)
+    slip = ax[1].scatter(xs, ys, c=np.abs(np.rad2deg(βs)), s=2, cmap=CM, vmin=0, vmax=30, alpha=0.6)
     cbar = plt.colorbar(slip, ax=ax[1], label='β [deg]')
 
     ax[1].set_xlabel('x [m]')
@@ -233,12 +233,13 @@ def car_anim(xs, us, dt, ic=(0.0,0.0,0.0), follow=False, fps=60.0, speed=1.0, ti
 
     # create initial plots for the car and wheels
     car, wrl, wrr, wfl, wfr = get_car_shapes(xs[0], ys[0], ψs[0], δs[0])
-
-    car_plot, = ax[1].plot(car[:, 0], car[:, 1], color='orange')
-    wrl_plot, = ax[1].plot(wrl[:, 0], wrl[:, 1], color='yellow')
-    wrr_plot, = ax[1].plot(wrr[:, 0], wrr[:, 1], color='yellow')
-    wfl_plot, = ax[1].plot(wfl[:, 0], wfl[:, 1], color='yellow')
-    wfr_plot, = ax[1].plot(wfr[:, 0], wfr[:, 1], color='yellow')
+    wheel_color, wheel_alpha = 'white', 1  # wheel color and alpha
+    body_color, body_alpha = 'white', 0.7  # body color and alpha    
+    car_plot, = ax[1].plot(car[:, 0], car[:, 1], color=body_color, alpha=body_alpha)
+    wrl_plot, = ax[1].plot(wrl[:, 0], wrl[:, 1], color=wheel_color, alpha=wheel_alpha)
+    wrr_plot, = ax[1].plot(wrr[:, 0], wrr[:, 1], color=wheel_color, alpha=wheel_alpha)
+    wfl_plot, = ax[1].plot(wfl[:, 0], wfl[:, 1], color=wheel_color, alpha=wheel_alpha)
+    wfr_plot, = ax[1].plot(wfr[:, 0], wfr[:, 1], color=wheel_color, alpha=wheel_alpha)
 
     xs = xs[::int(fps*speed)]
     ys = ys[::int(fps*speed)]
