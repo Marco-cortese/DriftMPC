@@ -19,6 +19,12 @@ plt.rcParams['font.family'] = 'monospace'
 CM = 'jet' #'inferno'
 plt.rcParams['image.cmap'] = CM
 
+import os
+home_dir = os.path.expanduser("~")
+os.environ["ACADOS_SOURCE_DIR"] = f"{home_dir}/repos/acados"
+
+print(f"ACADOS_SOURCE_DIR: {os.environ['ACADOS_SOURCE_DIR']}") # print the ACADOS source directory
+
 ################################################################################
 # from Fufy.mat
 l = 0.56 # [m] wheelbase
@@ -154,7 +160,6 @@ def car_anim(xs, us, dt, ic=(0.0,0.0,0.0), follow=False, fps=60.0, speed=1.0, ti
     δs, Fxs = us[:, 0], us[:, 1]  # unpack the control inputs
     drifts = 180/π*np.abs(βs + δs) # "amount of drift" as the sum of sideslip angle and steering angle 
     n = xs.shape[0]  # number of time steps
-    assert δs.shape == (n,), "δs must be a 1D array with the same length as xs"
     # integrate the velocity components to get x, y, ψ
     xs, ys, ψs = np.zeros((n,)), np.zeros((n,)), np.zeros((n,))  # initialize arrays for x, y, ψ
     xs[0], ys[0], ψs[0] = ic  # initial conditions
@@ -279,5 +284,5 @@ def car_anim(xs, us, dt, ic=(0.0,0.0,0.0), follow=False, fps=60.0, speed=1.0, ti
     # anim.save('car_animation.gif', fps=FPS, dpi=50)  # save animation as gif
     # anim.save('car_animation.mp4', fps=fps, extra_args=['-vcodec', 'libx264']) # save animation as mp4
 
-    # return display(HTML(anim.to_jshtml()))
-    return display(HTML(anim.to_html5_video()))
+    return display(HTML(anim.to_jshtml()))
+    # return display(HTML(anim.to_html5_video()))
