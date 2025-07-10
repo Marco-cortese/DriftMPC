@@ -28,9 +28,6 @@ g = 9.81 # [m/s^2] gravity acceleration
 steering_ratio_f = 0.6 # [-] steering ratio front
 
 ################################################################################
-## CHANGING SECTION
-# Manually update the library for the vehicle
-
 m        = 9.4+9.4 # [kg] massa veicolo con mini PC e tutto il resto
 b        = l/2 # rear axle distance to CoG
 a        = l-b # front axle distance to CoG
@@ -64,6 +61,12 @@ Toe_rr              = -Toe_rl
 
 t_front             = t # [m] track width front
 t_rear              = t # [m] track width rear
+
+# constraints
+MAX_DELTA = 25 * π / 180  # [rad] maximum steering angle in radians
+MAX_V, MIN_V = 10, 0.5 # [m/s] maximum velocity
+# MAX_FX = 0.8 * μr*Fz_Rear # [N] maximum rear longitudinal force
+MAX_FX, MIN_FX = 30, 0.5 # [N] maximum rear longitudinal force
 
 ####################################################################################################
 # tire model
@@ -142,14 +145,15 @@ def beta2vel(vβr): # -> uvr
     v = V * np.sin(β)  # lateral velocity component
     return np.stack([u, v, r], axis=-1).reshape(vβr_shape)  # reshape back to original shape if necessary
 
-def car_anim(vβrs, δs, dt, ic=(0.0,0.0,0.0), follow=False, fps=60.0, speed=1.0):
+def car_anim(xs, us, dt, ic=(0.0,0.0,0.0), follow=False, fps=60.0, speed=1.0, title='Car Animation'):
     from matplotlib.animation import FuncAnimation
     from IPython.display import HTML, display
 
-    assert vβrs.shape[-1] == 3, "Input must be a 3-element array [V, β, r]"
-    vs, βs, rs = vβrs[:, 0], vβrs[:, 1], vβrs[:, 2] # unpack the vβr array
-    n = vβrs.shape[0]  # number of time steps
-    assert δs.shape == (n,), "δs must be a 1D array with the same length as vβrs"
+    assert xs.shape[-1] == 3, "Input must be a 3-element array [V, β, r]"
+    vs, βs, rs = xs[:, 0], xs[:, 1], xs[:, 2] # unpack the vβr array
+    Fxs, δs = us[:, 0], us[:, 1]  # unpack the control inputs
+    n = xs.shape[0]  # number of time steps
+    assert δs.shape == (n,), "δs must be a 1D array with the same length as xs"
     # integrate the velocity components to get x, y, ψ
     xs, ys, ψs = np.zeros((n,)), np.zeros((n,)), np.zeros((n,))  # initialize arrays for x, y, ψ
     xs[0], ys[0], ψs[0] = ic  # initial conditions
@@ -200,31 +204,44 @@ def car_anim(vβrs, δs, dt, ic=(0.0,0.0,0.0), follow=False, fps=60.0, speed=1.0
         return car_corners_gf, wrl_gf, wrr_gf, wfl_gf, wfr_gf
 
     # create the figure and axis
-    fig, ax = plt.subplots(figsize=(10, 6))
-    ax.set_aspect('equal')
-    ax.set_xlim(np.min(xs)-1, np.max(xs)+1)
-    ax.set_ylim(np.min(ys)-1, np.max(ys)+1)
+    fig, ax = plt.subplots(1,2,figsize=(16, 9), width_ratios=[1, 6])
+    ax[1].set_aspect('equal')
+    ax[1].set_xlim(np.min(xs)-1, np.max(xs)+1)
+    ax[1].set_ylim(np.min(ys)-1, np.max(ys)+1)
 
-    slip = ax.scatter(xs, ys, c=np.abs(np.rad2deg(βs)), s=2, cmap=CM, vmin=0, vmax=50)
-    cbar = plt.colorbar(slip, ax=ax, label='β [deg]')
+    slip = ax[1].scatter(xs, ys, c=np.abs(np.rad2deg(βs)), s=2, cmap=CM, vmin=0, vmax=50)
+    cbar = plt.colorbar(slip, ax=ax[1], label='β [deg]')
 
-    ax.set_xlabel('x [m]')
-    ax.set_ylabel('y [m]')
-    ax.set_title('Car Animation')
-    plt.tight_layout()
+    ax[1].set_xlabel('x [m]')
+    ax[1].set_ylabel('y [m]')
+    
+
+    # in the 0 ax plot 2 bars with the Fx and δ values updating in time
+    bar = ax[0].bar([1,2], [Fxs[0], np.abs(δs[0]*MAX_FX/MAX_DELTA)], color='orange')
+    ax0b = ax[0].twinx()  # create a twin axis
+    ax[0].set_xticks([1, 2])
+    ax[0].set_xticklabels(['Fx [N]', 'δ [deg]'])
+    ax[0].set_ylim(0, MAX_FX)
+    ax[0].grid(False), ax0b.grid(False)  # disable grid for the bar plot
+    ax0b.set_ylim(0, MAX_DELTA * 180/π)  # set the limits of the twin axis
+    
+    fig.suptitle(title)
+
+    # plt.tight_layout()
 
     # create initial plots for the car and wheels
     car, wrl, wrr, wfl, wfr = get_car_shapes(xs[0], ys[0], ψs[0], δs[0])
 
-    car_plot, = ax.plot(car[:, 0], car[:, 1], color='orange')
-    wrl_plot, = ax.plot(wrl[:, 0], wrl[:, 1], color='yellow')
-    wrr_plot, = ax.plot(wrr[:, 0], wrr[:, 1], color='yellow')
-    wfl_plot, = ax.plot(wfl[:, 0], wfl[:, 1], color='yellow')
-    wfr_plot, = ax.plot(wfr[:, 0], wfr[:, 1], color='yellow')
+    car_plot, = ax[1].plot(car[:, 0], car[:, 1], color='orange')
+    wrl_plot, = ax[1].plot(wrl[:, 0], wrl[:, 1], color='yellow')
+    wrr_plot, = ax[1].plot(wrr[:, 0], wrr[:, 1], color='yellow')
+    wfl_plot, = ax[1].plot(wfl[:, 0], wfl[:, 1], color='yellow')
+    wfr_plot, = ax[1].plot(wfr[:, 0], wfr[:, 1], color='yellow')
 
     xs = xs[::int(fps*speed)]
     ys = ys[::int(fps*speed)]
     ψs = ψs[::int(fps*speed)]
+    Fxs = Fxs[::int(fps*speed)]
     δs = δs[::int(fps*speed)]
 
     def update(frame):
@@ -237,11 +254,15 @@ def car_anim(vβrs, δs, dt, ic=(0.0,0.0,0.0), follow=False, fps=60.0, speed=1.0
         wfl_plot.set_data(wfl[:, 0], wfl[:, 1])
         wfr_plot.set_data(wfr[:, 0], wfr[:, 1])
 
+        # update bar plot
+        bar[0].set_height(Fxs[frame])
+        bar[1].set_height(np.abs(δs[frame]*MAX_FX/MAX_DELTA))
+
         if follow:
             # set the limits of the axis
             window_size = 8.0 # [m] size of the window around the car
-            ax.set_xlim(xs[frame] - window_size, xs[frame] + window_size)
-            ax.set_ylim(ys[frame] - window_size, ys[frame] + window_size)
+            ax[1].set_xlim(xs[frame] - window_size, xs[frame] + window_size)
+            ax[1].set_ylim(ys[frame] - window_size, ys[frame] + window_size)
 
         return car_plot, wrl_plot, wrr_plot, wfl_plot, wfr_plot
 
