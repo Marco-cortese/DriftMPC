@@ -5,6 +5,7 @@
 import numpy as np
 # useful functions from numpy (code more readable for matlab users)
 π = 3.14159265358979323846264338327950288419716939937510582
+np.random.seed(42)
 def cot(x): return 1/np.tan(x) # cotangent function
 np.set_printoptions(precision=6, formatter={'float': '{:+.6f}'.format}) # for better readability with sign
 from scipy.io import loadmat # importing loadmat to read .mat files
@@ -151,7 +152,7 @@ def beta2vel(vβr): # -> uvr
     v = V * np.sin(β)  # lateral velocity component
     return np.stack([u, v, r], axis=-1).reshape(vβr_shape)  # reshape back to original shape if necessary
 
-def car_anim(xs, us, dt, ic=(0.0,0.0,0.0), follow=False, fps=60.0, speed=1.0, title='Car Animation'):
+def car_anim(xs, us, dt, ic=(0.0,0.0,0.0), follow=False, fps=60.0, speed=1.0, title='Car Animation', get_video=False):
     from matplotlib.animation import FuncAnimation
     from IPython.display import HTML, display
 
@@ -284,5 +285,5 @@ def car_anim(xs, us, dt, ic=(0.0,0.0,0.0), follow=False, fps=60.0, speed=1.0, ti
     # anim.save('car_animation.gif', fps=FPS, dpi=50)  # save animation as gif
     # anim.save('car_animation.mp4', fps=fps, extra_args=['-vcodec', 'libx264']) # save animation as mp4
 
-    return display(HTML(anim.to_jshtml()))
-    # return display(HTML(anim.to_html5_video()))
+    if get_video: return display(HTML(anim.to_html5_video()))
+    else: return display(HTML(anim.to_jshtml()))
