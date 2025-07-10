@@ -66,7 +66,7 @@ t_rear              = t # [m] track width rear
 MAX_DELTA = 25 * π / 180  # [rad] maximum steering angle in radians
 MAX_V, MIN_V = 10, 0.5 # [m/s] maximum velocity
 # MAX_FX = 0.8 * μr*Fz_Rear # [N] maximum rear longitudinal force
-MAX_FX, MIN_FX = 30, 0.5 # [N] maximum rear longitudinal force
+MAX_FX, MIN_FX = 30, 0.0 # [N] maximum rear longitudinal force
 
 ####################################################################################################
 # tire model
@@ -152,6 +152,7 @@ def car_anim(xs, us, dt, ic=(0.0,0.0,0.0), follow=False, fps=60.0, speed=1.0, ti
     assert xs.shape[-1] == 3, "Input must be a 3-element array [V, β, r]"
     vs, βs, rs = xs[:, 0], xs[:, 1], xs[:, 2] # unpack the vβr array
     Fxs, δs = us[:, 0], us[:, 1]  # unpack the control inputs
+    drifts = 180/π*np.abs(βs + δs) # "amount of drift" as the sum of sideslip angle and steering angle 
     n = xs.shape[0]  # number of time steps
     assert δs.shape == (n,), "δs must be a 1D array with the same length as xs"
     # integrate the velocity components to get x, y, ψ
@@ -209,18 +210,19 @@ def car_anim(xs, us, dt, ic=(0.0,0.0,0.0), follow=False, fps=60.0, speed=1.0, ti
     ax[1].set_xlim(np.min(xs)-1, np.max(xs)+1)
     ax[1].set_ylim(np.min(ys)-1, np.max(ys)+1)
 
-    slip = ax[1].scatter(xs, ys, c=np.abs(np.rad2deg(βs)), s=2, cmap=CM, vmin=0, vmax=50)
+    slip = ax[1].scatter(xs, ys, c=np.abs(np.rad2deg(βs)), s=2, cmap=CM, vmin=0, vmax=30)
     cbar = plt.colorbar(slip, ax=ax[1], label='β [deg]')
 
     ax[1].set_xlabel('x [m]')
     ax[1].set_ylabel('y [m]')
     
+    max_drift_angle = 45 # [deg] maximum drift angle for the bar plot
 
     # in the 0 ax plot 2 bars with the Fx and δ values updating in time
-    bar = ax[0].bar([1,2], [Fxs[0], np.abs(δs[0]*MAX_FX/MAX_DELTA)], color='orange')
+    bar = ax[0].bar([1,2,3], [Fxs[0], drifts[0]*MAX_FX/max_drift_angle, np.abs(δs[0]*MAX_FX/MAX_DELTA)], color='orange')
     ax0b = ax[0].twinx()  # create a twin axis
-    ax[0].set_xticks([1, 2])
-    ax[0].set_xticklabels(['Fx [N]', 'δ [deg]'])
+    ax[0].set_xticks([1, 2, 3])
+    ax[0].set_xticklabels(['Fx', 'Drift', 'δ'])
     ax[0].set_ylim(0, MAX_FX)
     ax[0].grid(False), ax0b.grid(False)  # disable grid for the bar plot
     ax0b.set_ylim(0, MAX_DELTA * 180/π)  # set the limits of the twin axis
@@ -243,6 +245,7 @@ def car_anim(xs, us, dt, ic=(0.0,0.0,0.0), follow=False, fps=60.0, speed=1.0, ti
     ψs = ψs[::int(fps*speed)]
     Fxs = Fxs[::int(fps*speed)]
     δs = δs[::int(fps*speed)]
+    drifts = drifts[::int(fps*speed)]
 
     def update(frame):
         # Update the car and wheels positions    
@@ -256,7 +259,8 @@ def car_anim(xs, us, dt, ic=(0.0,0.0,0.0), follow=False, fps=60.0, speed=1.0, ti
 
         # update bar plot
         bar[0].set_height(Fxs[frame])
-        bar[1].set_height(np.abs(δs[frame]*MAX_FX/MAX_DELTA))
+        bar[1].set_height(drifts[frame]*MAX_FX/max_drift_angle)
+        bar[2].set_height(np.abs(δs[frame]*MAX_FX/MAX_DELTA))
 
         if follow:
             # set the limits of the axis
