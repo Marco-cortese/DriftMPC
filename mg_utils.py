@@ -69,24 +69,27 @@ Toe_rr              = -Toe_rl
 t_front             = t # [m] track width front
 t_rear              = t # [m] track width rear
 
+μf, μr = 0.8, 0.8   # [] friction coefficients front and rear
+Cyf = 370.36;  # [N/rad] Cornering stiffness front tyre
+Cyr = 1134.05; # [N/rad] Cornering stiffness rear tyre
+
 # constraints
 MAX_DELTA = 25 * π / 180  # [rad] maximum steering angle in radians
 MAX_V, MIN_V = 10, 0.5 # [m/s] maximum velocity
 # MAX_FX = 0.8 * μr*Fz_Rear # [N] maximum rear longitudinal force
-MAX_FX, MIN_FX = 30, 0.0 # [N] maximum rear longitudinal force
+# MAX_FX, MIN_FX = 30, 0.0 # [N] maximum rear longitudinal force
+MAX_FX, MIN_FX = 0.9 * μr * Fz_Rear, 0.0 # [N] maximum rear longitudinal force
 
 ####################################################################################################
 # tire model
 # μf, μr = 0.8, 0.8   # [] friction coefficients front and rear
-μf, μr = 0.5, 0.5   # [] friction coefficients front and rear
-Cyf = 370.36;  # [N/rad] Cornering stiffness front tyre
-Cyr = 1134.05; # [N/rad] Cornering stiffness rear tyre
 def fiala_tanh_np(α, Fx, Fz, μ, Cy): # tanh fiala approximation
     assert Fx**2 <= μ**2 * Fz**2, "Longitudinal force exceeds maximum limit"
     Fy_max = np.sqrt(μ**2 * Fz**2 - Fx**2) # maximum lateral force
     αs = np.atan(Fy_max/Cy) # maximum slip angle
     return Fy_max * np.tanh(α / αs) # tanh approximation
 def fiala_np(α, Fx, Fz, μ, Cy):
+    # assert Fx**2 <= μ**2 * Fz**2, f'Longitudinal force {Fx:.2f} exceeds maximum limit {μ**2 * Fz**2:.2f}'
     Fy_max = np.sqrt(μ**2 * Fz**2 - Fx**2) # maximum lateral force
     Fy_lin = Cy * np.tan(α) - Cy**2 * np.abs(np.tan(α)) * np.tan(α) / (3 * Fy_max) + Cy**3 * np.tan(α)**3 / (27 * Fy_max**2)
     Fy_sat = Fy_max * np.sign(α)
