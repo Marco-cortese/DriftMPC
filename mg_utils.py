@@ -155,7 +155,7 @@ def beta2vel(vβr): # -> uvr
     v = V * np.sin(β)  # lateral velocity component
     return np.stack([u, v, r], axis=-1).reshape(vβr_shape)  # reshape back to original shape if necessary
 
-def car_anim(xs, us, dt, ic=(0.0,0.0,0.0), follow=False, fps=60.0, speed=1.0, title='Car Animation', get_video=False):
+def car_anim(xs, us, dt, ic=(0.0,0.0,0.0), follow=False, fps=60.0, speed=1.0, title='Car Animation', get_video=False, static_img=False):
     from matplotlib.animation import FuncAnimation
     from IPython.display import HTML, display
 
@@ -214,31 +214,32 @@ def car_anim(xs, us, dt, ic=(0.0,0.0,0.0), follow=False, fps=60.0, speed=1.0, ti
         return car_corners_gf, wrl_gf, wrr_gf, wfl_gf, wfr_gf
 
     # create the figure and axis
-    fig, ax = plt.subplots(1,2,figsize=(16, 9), width_ratios=[1, 6])
+    fig, ax = plt.subplots(1,2,figsize=(16, 9), width_ratios=[1, 6 if not static_img else 100])
     ax[1].set_aspect('equal')
     ax[1].set_xlim(np.min(xs)-1, np.max(xs)+1)
     ax[1].set_ylim(np.min(ys)-1, np.max(ys)+1)
 
-    slip = ax[1].scatter(xs, ys, c=np.abs(np.rad2deg(βs)), s=2, cmap=CM, vmin=0, vmax=30, alpha=0.6)
-    cbar = plt.colorbar(slip, ax=ax[1], label='β [deg]')
-
     ax[1].set_xlabel('x [m]')
     ax[1].set_ylabel('y [m]')
     
-    max_drift_angle = 45 # [deg] maximum drift angle for the bar plot
 
-    # in the 0 ax plot 2 bars with the Fx and δ values updating in time
-    bar = ax[0].bar([1,2,3], [Fxs[0], drifts[0]*MAX_FX/max_drift_angle, np.abs(δs[0]*MAX_FX/MAX_DELTA)], color='orange')
-    ax0b = ax[0].twinx()  # create a twin axis
-    ax[0].set_xticks([1, 2, 3])
-    ax[0].set_xticklabels(['Fx', 'Drift', 'δ'])
-    ax[0].set_ylim(0, MAX_FX)
-    ax[0].grid(False), ax0b.grid(False)  # disable grid for the bar plot
-    ax0b.set_ylim(0, MAX_DELTA * 180/π)  # set the limits of the twin axis
-    
+    if not static_img: 
+        slip = ax[1].scatter(xs, ys, c=np.abs(np.rad2deg(βs)), s=2, cmap=CM, vmin=0, vmax=30, alpha=0.6)
+        cbar = plt.colorbar(slip, ax=ax[1], label='β [deg]')
+
+        # in the 0 ax plot 2 bars with the Fx and δ values updating in time
+        max_drift_angle = 45 # [deg] maximum drift angle for the bar plot
+        bar = ax[0].bar([1,2,3], [Fxs[0], drifts[0]*MAX_FX/max_drift_angle, np.abs(δs[0]*MAX_FX/MAX_DELTA)], color='orange')
+        ax0b = ax[0].twinx()  # create a twin axis
+        ax[0].set_xticks([1, 2, 3])
+        ax[0].set_xticklabels(['Fx', 'Drift', 'δ'])
+        ax[0].set_ylim(0, MAX_FX)
+        ax[0].grid(False), ax0b.grid(False)  # disable grid for the bar plot
+        ax0b.set_ylim(0, MAX_DELTA * 180/π)  # set the limits of the twin axis
+        
     fig.suptitle(title)
 
-    # plt.tight_layout()
+    plt.tight_layout()
 
     # create initial plots for the car and wheels
     car, wrl, wrr, wfl, wfr = get_car_shapes(xs[0], ys[0], ψs[0], δs[0])
@@ -250,43 +251,57 @@ def car_anim(xs, us, dt, ic=(0.0,0.0,0.0), follow=False, fps=60.0, speed=1.0, ti
     wfl_plot, = ax[1].plot(wfl[:, 0], wfl[:, 1], color=wheel_color, alpha=wheel_alpha)
     wfr_plot, = ax[1].plot(wfr[:, 0], wfr[:, 1], color=wheel_color, alpha=wheel_alpha)
 
-    xs = xs[::int(fps*speed)]
-    ys = ys[::int(fps*speed)]
-    ψs = ψs[::int(fps*speed)]
-    Fxs = Fxs[::int(fps*speed)]
-    δs = δs[::int(fps*speed)]
-    drifts = drifts[::int(fps*speed)]
+    k_static = 5.0 if static_img else 1.0  # speed factor for static images 
 
-    def update(frame):
-        # Update the car and wheels positions    
-        car, wrl, wrr, wfl, wfr = get_car_shapes(xs[frame], ys[frame], ψs[frame], δs[frame])
-        # Update the plots
-        car_plot.set_data(car[:, 0], car[:, 1])
-        wrl_plot.set_data(wrl[:, 0], wrl[:, 1])
-        wrr_plot.set_data(wrr[:, 0], wrr[:, 1])
-        wfl_plot.set_data(wfl[:, 0], wfl[:, 1])
-        wfr_plot.set_data(wfr[:, 0], wfr[:, 1])
+    xs = xs[::int(fps*speed*k_static)]
+    ys = ys[::int(fps*speed*k_static)]
+    ψs = ψs[::int(fps*speed*k_static)]
+    Fxs = Fxs[::int(fps*speed*k_static)]
+    δs = δs[::int(fps*speed*k_static)]
+    drifts = drifts[::int(fps*speed*k_static)]
 
-        # update bar plot
-        bar[0].set_height(Fxs[frame])
-        bar[1].set_height(drifts[frame]*MAX_FX/max_drift_angle)
-        bar[2].set_height(np.abs(δs[frame]*MAX_FX/MAX_DELTA))
+    if static_img: # plot all the frames as static images
+        for i in tqdm(range(len(xs)), desc='Plotting frames', leave=False):
+            car, wrl, wrr, wfl, wfr = get_car_shapes(xs[i], ys[i], ψs[i], δs[i])
+            col = plt.get_cmap(CM)(i / len(xs))
+            ax[1].plot(car[:, 0], car[:, 1], color=col, alpha=body_alpha)
+            ax[1].plot(wrl[:, 0], wrl[:, 1], color=col, alpha=wheel_alpha)
+            ax[1].plot(wrr[:, 0], wrr[:, 1], color=col, alpha=wheel_alpha)
+            ax[1].plot(wfl[:, 0], wfl[:, 1], color=col, alpha=wheel_alpha)
+            ax[1].plot(wfr[:, 0], wfr[:, 1], color=col, alpha=wheel_alpha)
+        return fig
 
-        if follow:
-            # set the limits of the axis
-            window_size = 8.0 # [m] size of the window around the car
-            ax[1].set_xlim(xs[frame] - window_size, xs[frame] + window_size)
-            ax[1].set_ylim(ys[frame] - window_size, ys[frame] + window_size)
+    else: # create the animation
+        def update(frame):
+            # Update the car and wheels positions    
+            car, wrl, wrr, wfl, wfr = get_car_shapes(xs[frame], ys[frame], ψs[frame], δs[frame])
+            # Update the plots
+            car_plot.set_data(car[:, 0], car[:, 1])
+            wrl_plot.set_data(wrl[:, 0], wrl[:, 1])
+            wrr_plot.set_data(wrr[:, 0], wrr[:, 1])
+            wfl_plot.set_data(wfl[:, 0], wfl[:, 1])
+            wfr_plot.set_data(wfr[:, 0], wfr[:, 1])
 
-        return car_plot, wrl_plot, wrr_plot, wfl_plot, wfr_plot
+            # update bar plot
+            bar[0].set_height(Fxs[frame])
+            bar[1].set_height(drifts[frame]*MAX_FX/max_drift_angle)
+            bar[2].set_height(np.abs(δs[frame]*MAX_FX/MAX_DELTA))
 
-    # Create the animation
-    anim = FuncAnimation(fig, update, frames=len(xs), interval=1000/fps, blit=True)
+            if follow:
+                # set the limits of the axis
+                window_size = 8.0 # [m] size of the window around the car
+                ax[1].set_xlim(xs[frame] - window_size, xs[frame] + window_size)
+                ax[1].set_ylim(ys[frame] - window_size, ys[frame] + window_size)
 
-    plt.close(fig)  # Close the figure to avoid displaying it in Jupyter Notebook
+            return car_plot, wrl_plot, wrr_plot, wfl_plot, wfr_plot
 
-    # anim.save('car_animation.gif', fps=FPS, dpi=50)  # save animation as gif
-    # anim.save('car_animation.mp4', fps=fps, extra_args=['-vcodec', 'libx264']) # save animation as mp4
+        # Create the animation
+        anim = FuncAnimation(fig, update, frames=len(xs), interval=1000/fps, blit=True)
 
-    if get_video: return display(HTML(anim.to_html5_video()))
-    else: return display(HTML(anim.to_jshtml()))
+        plt.close(fig)  # Close the figure to avoid displaying it in Jupyter Notebook
+
+        # anim.save('car_animation.gif', fps=FPS, dpi=50)  # save animation as gif
+        # anim.save('car_animation.mp4', fps=fps, extra_args=['-vcodec', 'libx264']) # save animation as mp4
+
+        if get_video: return display(HTML(anim.to_html5_video()))
+        else: return display(HTML(anim.to_jshtml()))
