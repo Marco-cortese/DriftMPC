@@ -40,6 +40,7 @@ m        = 9.4+9.4 # [kg] massa veicolo con mini PC e tutto il resto
 b        = l/2 # rear axle distance to CoG
 a        = l-b # front axle distance to CoG
 J_CoG    = 9.4*a**2+9.4*b**2 # Inertia axis z[kg*m^2]
+J_CoG_real = J_CoG*0.9
 Fz_Front = 9.4*g # [N]
 Fz_Rear  = 9.4*g # [N]
 Fz_Tot   = Fz_Rear + Fz_Front # [N] 

@@ -12,7 +12,7 @@ from scipy.io import loadmat # importing loadmat to read .mat files
 from tqdm import tqdm # for progress bar
 import matplotlib.pyplot as plt # for plotting
 # Set plotting style
-plt.style.use('dark_background')
+# plt.style.use('dark_background')
 plt.rcParams['figure.figsize'] = (10, 6)
 plt.rcParams['axes.grid'] = True
 plt.rcParams['grid.alpha'] = 0.3
