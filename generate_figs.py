@@ -289,6 +289,7 @@ def compute_num_steps(ts_sim, Ts, Tf):
 
 class Test():
     def __init__(self, 
+                    title='Default Test',
                     Ts=0.01, 
                     N=100,
                     T_tot=12.0,
@@ -317,7 +318,12 @@ class Test():
                     ref_preview=True,
                     V_noise=(0, 0.3),
                     beta_noise=(0, 0.0174533),
+                    qp_solver='PARTIAL_CONDENSING_HPIPM',
+                    qp_solver_iter_max=25,
+                    nlp_solver_type='SQP', # 'SQP_RTI' or 'SQP'
+                    nlp_solver_max_iter=50,
                  ):
+        self.title = title
         self.Ts = Ts
         self.N = N
         self.T_tot = T_tot
@@ -346,6 +352,10 @@ class Test():
         self.ref_preview = ref_preview
         self.V_noise = V_noise
         self.beta_noise = beta_noise
+        self.qp_solver = qp_solver
+        self.qp_solver_iter_max = qp_solver_iter_max
+        self.nlp_solver_type = nlp_solver_type
+        self.nlp_solver_max_iter = nlp_solver_max_iter
 
 
 
@@ -363,6 +373,8 @@ TESTS = [
 
 
 for test in TESTS:
+    print(f"Running test: {test.title}")
+
     clear_previous_simulation()
     # define simulation fundamental time step [s]
     ts_sim = 0.001
@@ -394,11 +406,7 @@ for test in TESTS:
     delta_eq = u_eq[0] # [rad] steering angle 
     Fx_eq = u_eq[1] # [N] longitudinal force
 
-    # # Input bounds
-    # delta_lb = -MAX_DELTA # lower bound on steering angle
-    # delta_ub = MAX_DELTA  # upper bound on steering angle
-    # Fx_lb = MIN_FX # lower bound on longitudinal force
-    # Fx_ub = MAX_FX # upper bound of longitudinal force
+    # Input bounds
     delta_lb = test.delta_lb # lower bound on steering angle
     delta_ub = test.delta_ub  # upper bound on steering angle
     Fx_lb = test.Fx_lb # lower bound on longitudinal force
@@ -409,27 +417,10 @@ for test in TESTS:
     V_ub = MAX_V # [m/s] upper bound on velocity
 
     # initial condition
-    # x0 = np.array([V_eq, beta_eq, r_eq, 0, 0]) + np.array([1, +10*π/180, .5, 0, 0])
-    # x0 = np.array([V_eq, beta_eq, r_eq, 0, 0]) + np.array([-2, +15*π/180, .5, 0, 0])
-    # x0 = np.array([V_eq, beta_eq, r_eq, 0, 0]) + np.array([+2, +10*π/180, -.5, 0, 0])
-    # x0 = np.array([1,0,0,0,0])
     x0 = np.array(test.x0) # [m/s, rad, rad/s, rad, N]
-
-    # initial guess for the control inputs
-    # u0 = np.array([0, 0])
     u0 = np.array(test.u0) # [rad, N]
 
     # define cost weigth matrices
-
-    # w_V, w_beta, w_r, w_delta, w_Fx = 0, 1, 0, 0, 0 # donuts
-    w_V = 1e3
-    w_beta = 8e5
-    w_r = 0
-    w_delta, w_Fx =  0, 0 # hold radius attempt
-    w_dt_delta = 1e3 # weight on derivative of steering angle
-    w_dt_Fx = 1e-2 # weight on derivative of rear longitudinal force
-
-    # w_V, w_beta, w_r, w_delta, w_Fx, w_dt_delta, w_dt_Fx = 1e2, 1e3, 0, 0, 0, 1e1, 1e-2
     w_V, w_beta, w_r, w_delta, w_Fx, w_dt_delta, w_dt_Fx = test.mpc_ws
 
 
@@ -440,33 +431,15 @@ for test in TESTS:
     # get state and control dimensions
     nx, nu = model.x.rows(), model.u.rows()
 
-    # define reference 
-    # - define reference for the angle and, accordingly, the simulation time Tf
-    # angle_ref, Tf = piecewise_constant(np.array([np.pi, 0]), np.array([5, 10]), Ts)
-
     zero_ref, Tf = piecewise_constant([[0]],[T_tot], Ts)
-    # V_ref, _    = piecewise_constant([V_eq],[T_tot], Ts)
-    # # V_ref, Tf    = piecewise_constant([5, 3, 5],[T_tot/3, T_tot/3, T_tot/3], Ts)
-    # # beta_ref, _  = piecewise_constant([-beta_eq],[T_tot], Ts)
-    # # beta_ref, _  = piecewise_constant([np.deg2rad(-30),np.deg2rad(30) ],[T_tot/2, T_tot/2], Ts)
-    # beta_ref, _  = piecewise_constant([np.deg2rad(-30), np.deg2rad(30), np.deg2rad(-30)], [T_tot/3, T_tot/3, T_tot/3], Ts)
-    # r_ref, _     = piecewise_constant([r_eq],[T_tot], Ts)
-    # delta_ref, _ = piecewise_constant([delta_eq],[T_tot], Ts)
-    # Fx_ref, _    = piecewise_constant([Fx_eq],[T_tot], Ts)
-
     V_ref, _    = piecewise_constant(test.V_ref[0], [T_tot*ki for ki in test.V_ref[1]], Ts)
     beta_ref, _  = piecewise_constant(test.beta_ref[0], [T_tot*ki for ki in test.beta_ref[1]], Ts)
     r_ref, _     = piecewise_constant(test.r_ref[0], [T_tot*ki for ki in test.r_ref[1]], Ts)
     delta_ref, _ = piecewise_constant(test.delta_ref[0], [T_tot*ki for ki in test.delta_ref[1]], Ts)
     Fx_ref, _    = piecewise_constant(test.Fx_ref[0], [T_tot*ki for ki in test.Fx_ref[1]], Ts)
 
-    print(f'V_ref: {V_ref.shape}, beta_ref: {beta_ref.shape}, r_ref: {r_ref.shape}, delta_ref: {delta_ref.shape}, Fx_ref: {Fx_ref.shape}')
-
 
     # - provide a reference for all variables
-    #  x = [V, beta, r, delta, Fx] u = [d_delta, d_Fx]
-    # y_ref = np.column_stack((np.zeros((len(angle_ref), 1)), angle_ref.reshape(-1,1), np.zeros((len(angle_ref), nx+nu-2))))
-    # y_ref_nolookahead = np.column_stack((V_ref, beta_ref, r_ref, delta_ref, Fx_ref))
     y_ref_nolookahead = np.column_stack((V_ref, beta_ref, r_ref, zero_ref, zero_ref, delta_ref, Fx_ref))
 
     # - add N samples at the end (replicas of the last sample) for reference look-ahead
@@ -505,7 +478,7 @@ for test in TESTS:
         ny = nx + nu 
         ny_e = nx
 
-        print(f"nx: {nx}, nu: {nu}, ny: {ny}, ny_e: {ny_e}")
+        # print(f"nx: {nx}, nu: {nu}, ny: {ny}, ny_e: {ny_e}")
     
         # define cost type
         # ocp.cost.cost_type = 'LINEAR_LS'
@@ -513,7 +486,7 @@ for test in TESTS:
         ocp.cost.cost_type = 'NONLINEAR_LS'
         ocp.cost.cost_type_e = 'NONLINEAR_LS'
         
-        print(f'Q: \n{Q}\nR: \n{R}')
+        # print(f'Q: \n{Q}\nR: \n{R}')
         ocp.cost.W = block_diag(Q, R)
         ocp.cost.W_e = T/N*Q
 
@@ -544,19 +517,19 @@ for test in TESTS:
 
         # set solver options
         # ocp.solver_options.print_level = 1
-        ocp.solver_options.qp_solver = "PARTIAL_CONDENSING_HPIPM"  #FULL_CONDENSING_QPOASES, PARTIAL_CONDENSING_HPIPM
+        ocp.solver_options.qp_solver = test.qp_solver #"PARTIAL_CONDENSING_HPIPM"  #FULL_CONDENSING_QPOASES, PARTIAL_CONDENSING_HPIPM
         ocp.solver_options.hessian_approx = "GAUSS_NEWTON"
         ocp.solver_options.integrator_type = "ERK"
-        ocp.solver_options.nlp_solver_type = "SQP_RTI" #SQP, SQP_RTI
+        ocp.solver_options.nlp_solver_type = test.nlp_solver_type # "SQP_RTI" #SQP, SQP_RTI
 
         # to configure partial condensing
         #ocp.solver_options.qp_solver_cond_N = int(N/10)
 
         # some more advanced settings (refer to the documentation to see them all)
         # - maximum number of SQP iterations (default: 100)
-        ocp.solver_options.nlp_solver_max_iter = 1 #50
+        ocp.solver_options.nlp_solver_max_iter = test.nlp_solver_max_iter #50
         # - maximum number of iterations for the QP solver (default: 50)
-        ocp.solver_options.qp_solver_iter_max = 5 #25
+        ocp.solver_options.qp_solver_iter_max = test.qp_solver_iter_max #25
 
         # - configure warm start of the QP solver (0: no, 1: warm start, 2: hot start)
         # (depends on the specific solver)
@@ -662,7 +635,7 @@ for test in TESTS:
 
     # plot the simulation results
     CM = 'jet' #'inferno'
-    fig = plt.figure(figsize=(15, 15))
+    fig = plt.figure(figsize=(16, 9))
     plt.subplot(5,2,1)
     plt.plot(time_mpc, y_ref_nolookahead[:, 0], label='V_ref')
     plt.plot(time, simX[:, 0], linestyle='--', label='V')
@@ -729,12 +702,7 @@ for test in TESTS:
     # plt.show()
 
 
-    print("Final state:")
-    print(f"V: {simX[-1,0]:.2f} m/s")
-    print(f"Beta: {np.rad2deg(simX[-1,1]):.2f} deg")
-    print(f"Yaw rate: {np.rad2deg(simX[-1,2]):.2f} deg/s")
-    print(f"Delta: {np.rad2deg(simX[-1,3]):.2f} deg")
-    print(f"Fx: {simX[-1,4]:.2f} N")
+    print(f"Final state: V={simX[-1,0]:.2f} m/s, Beta={np.rad2deg(simX[-1,1]):.2f} deg, Yaw rate={np.rad2deg(simX[-1,2]):.2f} deg/s, Delta={np.rad2deg(simX[-1,3]):.2f} deg, Fx={simX[-1,4]:.2f} N")
 
 
     # animation
