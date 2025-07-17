@@ -158,7 +158,7 @@ def beta2vel(vβr): # -> uvr
     v = V * np.sin(β)  # lateral velocity component
     return np.stack([u, v, r], axis=-1).reshape(vβr_shape)  # reshape back to original shape if necessary
 
-def car_anim(xs, us, dt, ic=(0.0,0.0,0.0), follow=False, fps=60.0, speed=1.0, title='Car Animation', get_video=False, static_img=False):
+def car_anim(xs, us, dt, ic=(0.0,0.0,0.0), follow=False, fps=60.0, speed=1.0, title='Car Animation', get_video=False, static_img=False, no_notebook=False):
     from matplotlib.animation import FuncAnimation
     from IPython.display import HTML, display
 
@@ -300,7 +300,7 @@ def car_anim(xs, us, dt, ic=(0.0,0.0,0.0), follow=False, fps=60.0, speed=1.0, ti
 
         # Create the animation
         anim = FuncAnimation(fig, update, frames=len(xs), interval=1000/fps, blit=True)
-
+        if no_notebook: return anim  # return the animation object if not in notebook
         plt.close(fig)  # Close the figure to avoid displaying it in Jupyter Notebook
 
         # anim.save('car_animation.gif', fps=FPS, dpi=50)  # save animation as gif
