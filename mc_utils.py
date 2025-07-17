@@ -165,7 +165,8 @@ def car_anim(xs, us, dt, ic=(0.0,0.0,0.0), follow=False, fps=60.0, speed=1.0, ti
     assert xs.shape[-1] == 3, "Input must be a 3-element array [V, β, r]"
     vs, βs, rs = xs[:, 0], xs[:, 1], xs[:, 2] # unpack the vβr array
     δs, Fxs = us[:, 0], us[:, 1]  # unpack the control inputs
-    drifts = 180/π*np.abs(βs + δs) # "amount of drift" as the sum of sideslip angle and steering angle 
+    # drifts = np.abs(βs + δs) # "amount of drift" as the sum of sideslip angle and steering angle 
+    drifts =np.abs(βs) # just beta 
     n = xs.shape[0]  # number of time steps
     # integrate the velocity components to get x, y, ψ
     xs, ys, ψs = np.zeros((n,)), np.zeros((n,)), np.zeros((n,))  # initialize arrays for x, y, ψ
@@ -226,19 +227,19 @@ def car_anim(xs, us, dt, ic=(0.0,0.0,0.0), follow=False, fps=60.0, speed=1.0, ti
     ax[1].set_ylabel('y [m]')
     
 
+    slip = ax[1].scatter(xs, ys, c=np.abs(np.rad2deg(βs)), s=2, cmap=CM, vmin=0, vmax=30, alpha=0.6)
+    cbar = plt.colorbar(slip, ax=ax[1], label='β [deg]')
     if not static_img: 
-        slip = ax[1].scatter(xs, ys, c=np.abs(np.rad2deg(βs)), s=2, cmap=CM, vmin=0, vmax=30, alpha=0.6)
-        cbar = plt.colorbar(slip, ax=ax[1], label='β [deg]')
 
         # in the 0 ax plot 2 bars with the Fx and δ values updating in time
-        max_drift_angle = 45 # [deg] maximum drift angle for the bar plot
-        bar = ax[0].bar([1,2,3], [Fxs[0], drifts[0]*MAX_FX/max_drift_angle, np.abs(δs[0]*MAX_FX/MAX_DELTA)], color='orange')
+        max_drift_angle = 40*π/180 # [deg] maximum drift angle for the bar plot
+        bar = ax[0].bar([1,2,3], [Fxs[0], drifts[0]*MAX_FX/max_drift_angle, np.abs(δs[0]*MAX_FX/max_drift_angle)], color='orange')
         ax0b = ax[0].twinx()  # create a twin axis
         ax[0].set_xticks([1, 2, 3])
-        ax[0].set_xticklabels(['Fx', 'Drift', 'δ'])
+        ax[0].set_xticklabels(['Fx', 'β', 'δ'])
         ax[0].set_ylim(0, MAX_FX)
         ax[0].grid(False), ax0b.grid(False)  # disable grid for the bar plot
-        ax0b.set_ylim(0, MAX_DELTA * 180/π)  # set the limits of the twin axis
+        ax0b.set_ylim(0, max_drift_angle*180/π)  # set the limits of the twin axis
         
     fig.suptitle(title)
 
@@ -254,7 +255,7 @@ def car_anim(xs, us, dt, ic=(0.0,0.0,0.0), follow=False, fps=60.0, speed=1.0, ti
     wfl_plot, = ax[1].plot(wfl[:, 0], wfl[:, 1], color=wheel_color, alpha=wheel_alpha)
     wfr_plot, = ax[1].plot(wfr[:, 0], wfr[:, 1], color=wheel_color, alpha=wheel_alpha)
 
-    k_static = 5.0 if static_img else 1.0  # speed factor for static images 
+    k_static = 8.0 if static_img else 1.0  # 5 speed factor for static images 
 
     xs = xs[::int(fps*speed*k_static)]
     ys = ys[::int(fps*speed*k_static)]
@@ -288,7 +289,7 @@ def car_anim(xs, us, dt, ic=(0.0,0.0,0.0), follow=False, fps=60.0, speed=1.0, ti
             # update bar plot
             bar[0].set_height(Fxs[frame])
             bar[1].set_height(drifts[frame]*MAX_FX/max_drift_angle)
-            bar[2].set_height(np.abs(δs[frame]*MAX_FX/MAX_DELTA))
+            bar[2].set_height(np.abs(δs[frame]*MAX_FX/max_drift_angle))
 
             if follow:
                 # set the limits of the axis
@@ -300,6 +301,7 @@ def car_anim(xs, us, dt, ic=(0.0,0.0,0.0), follow=False, fps=60.0, speed=1.0, ti
 
         # Create the animation
         anim = FuncAnimation(fig, update, frames=len(xs), interval=1000/fps, blit=True)
+        # anim = FuncAnimation(fig, update, frames=len(xs), interval=1000/fps, blit=False)
         if no_notebook: return anim  # return the animation object if not in notebook
         plt.close(fig)  # Close the figure to avoid displaying it in Jupyter Notebook
 

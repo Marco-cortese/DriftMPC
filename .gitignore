@@ -56,4 +56,6 @@ c_generated_code*
 *acados_sim.json
 drift_eq/gainLQR_drift.mat
 
-inverted_pendulum_notebook/*
+inverted_pendulum_notebook/
+
+generated_figures/
