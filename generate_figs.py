@@ -308,7 +308,7 @@ class Test():
     def __init__(self, 
                     title='Default Test',
                     Ts=0.01, 
-                    N=100,
+                    N=150,
                     T_tot=9.0,
                     model_f=STM_model_dt_inputs, 
                     tire_f=fiala_tanh_ca, 
