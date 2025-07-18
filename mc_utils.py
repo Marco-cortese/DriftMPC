@@ -316,6 +316,8 @@ def car_anim(xs, us, dt, ic=(0.0,0.0,0.0), follow=False, fps=60.0, speed=1.0, ti
                 ax[1].set_xlim(xs[frame] - window_size, xs[frame] + window_size)
                 ax[1].set_ylim(ys[frame] - window_size, ys[frame] + window_size)
 
+            print(f'Anim: {frame/len(xs)*100:.0f}%              ', end='\r')
+
             return car_plot, wrl_plot, wrr_plot, wfl_plot, wfr_plot, wrl_fill[0], wrr_fill[0], wfl_fill[0], wfr_fill[0]
 
         # Create the animation
