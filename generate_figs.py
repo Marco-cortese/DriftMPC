@@ -10,7 +10,7 @@ import warnings
 warnings.filterwarnings("ignore", category=UserWarning, module='acados_template')
 
 
-
+np.random.seed(42) # set random seed for reproducibility
 
 
 # tire model functions
@@ -325,7 +325,7 @@ class Test():
                     Fx_ub=MAX_FX,
                     x0=[2, 0, 0, 0, 0],
                     u0=[0, 0],
-                    mpc_ws=[1e2, 1e3, 0, 0, 0, 1e0, 1e-3],
+                    mpc_ws=[1e2, 1e3, 0, 0, 0, 1e0, 1e-2],
                     V_ref=([0], [1]),
                     beta_ref=([0], [1]),
                     r_ref=([10], [1]),
@@ -381,7 +381,10 @@ class Test():
 
 ## PARAMETERS
 GO_FAST = False # save figs instead of videos to run tests faster
-# GO_FAST = True # save figs instead of videos to run tests faster
+GO_FAST = True # save figs instead of videos to run tests faster
+
+SKIP_ANIM = False # skip animation generation
+SKIP_ANIM = True # skip animation generation
 
 x_eq0 = [4.510306923563673, -0.4363323129985824, 1.503435641187891, -0.13754984841368398, 45.87960340367423]
 
@@ -526,7 +529,7 @@ TESTS = [
         qp_solver_iter_max=5,
         nlp_solver_max_iter=5,
         nlp_solver_type='SQP_RTI'), # 'SQP_RTI' or 'SQP'
-    Test(title='Sinusoidal β reference 1, w:[1e2, 1e3, 0, 0, 0, 1e0, 1e-3]\nwith model mismatch and measurement noise, SQP_RTI',
+    Test(title='Sinusoidal β reference 1, w:[1e2, 1e3, 0, 0, 0, 1e1, 1e-2]\nwith model mismatch and measurement noise, SQP_RTI',
         V_ref=([x_eq0[0]], [1]), 
         beta_ref=beta_ref0, 
         r_ref=([0], [1]), 
@@ -539,13 +542,13 @@ TESTS = [
         J_k=0.9,
         V_noise=(0,0.3), # (0, 0.3), #
         beta_noise=(0,0.018), # (0, 0.0174533),
-        mpc_ws=[1e2, 1e3, 0, 0, 0, 1e0, 1e-3],
+        mpc_ws=[1e2, 1e3, 0, 0, 0, 1e1, 1e-2],
         T_tot=tt_tot, x_eq=x_eq0, x0=x0_standstill, Ts=tTs,
         qp_solver_iter_max=5,
         nlp_solver_max_iter=5,
         nlp_solver_type='SQP_RTI',
         ),
-    Test(title='Sinusoidal β reference 2, w:[1e2, 1e3, 0, 0, 0, 1e0, 1e-3]\nwith model mismatch and measurement noise, SQP_RTI',
+    Test(title='Sinusoidal β reference 2, w:[1e2, 1e3, 0, 0, 0, 1e1, 1e-2]\nwith model mismatch and measurement noise, SQP_RTI',
         V_ref=([x_eq0[0]], [1]), 
         beta_ref=beta_ref1, 
         r_ref=([0], [1]), 
@@ -558,13 +561,13 @@ TESTS = [
         J_k=0.9,
         V_noise=(0,0.3), # (0, 0.3), #
         beta_noise=(0,0.018), # (0, 0.0174533),
-        mpc_ws=[1e2, 1e3, 0, 0, 0, 1e0, 1e-3],
+        mpc_ws=[1e2, 1e3, 0, 0, 0, 1e1, 1e-2],
         T_tot=tt_tot, x_eq=x_eq0, x0=x0_standstill, Ts=tTs,
         qp_solver_iter_max=5,
         nlp_solver_max_iter=5,
         nlp_solver_type='SQP_RTI',
         ),
-    Test(title='V Steps, w:[1e2, 1e3, 0, 0, 0, 1e0, 1e-3]\nwith model mismatch and measurement noise, SQP_RTI',
+    Test(title='V Steps, w:[1e2, 1e3, 0, 0, 0, 1e1, 1e-2]\nwith model mismatch and measurement noise, SQP_RTI',
         V_ref=([3.5, 8, 3.5, 8, 3.5], [2.002/7, 1/7, 1/7, 1/7, 2/7]),
         beta_ref=([30*π/180], [1]),
         r_ref=([0], [1]), 
@@ -577,13 +580,13 @@ TESTS = [
         J_k=0.9,
         V_noise=(0,0.3), # (0, 0.3), #
         beta_noise=(0,0.018), # (0, 0.0174533),
-        mpc_ws=[1e2, 1e3, 0, 0, 0, 1e0, 1e-3],
+        mpc_ws=[1e2, 1e3, 0, 0, 0, 1e1, 1e-2],
         T_tot=15.0, x_eq=x_eq0, x0=x0_standstill,
         qp_solver_iter_max=5, 
         nlp_solver_max_iter=5,
         nlp_solver_type='SQP_RTI',
         ),
-    Test(title='β Steps, w:[1e2, 1e3, 0, 0, 0, 1e0, 1e-3]\nwith model mismatch and measurement noise, SQP_RTI',
+    Test(title='β Steps, w:[1e2, 1e3, 0, 0, 0, 1e0, 1e-2]\nwith model mismatch and measurement noise, SQP_RTI',
         V_ref=([6.], [1.]),
         # beta_ref=([-5*π/180, +10*π/180, -15*π/180, +20*π/180, -25*π/180], [1/5,1/5,1/5,1/5,1/5]),
         # beta_ref=([-15*π/180, -20*π/180, -25*π/180, -30*π/180], [4/22,5/22,6/22,7/22]),
@@ -598,13 +601,13 @@ TESTS = [
         J_k=0.9,
         V_noise=(0,0.3), # (0, 0.3), #
         beta_noise=(0,0.018), # (0, 0.0174533),
-        mpc_ws=[1e2, 1e3, 0, 0, 0, 1e0, 1e-3],
+        mpc_ws=[1e2, 1e3, 0, 0, 0, 1e0, 1e-2],
         T_tot=16.0, x_eq=x_eq0, x0=x0_standstill,
         qp_solver_iter_max=5, 
         nlp_solver_max_iter=5,
         nlp_solver_type='SQP_RTI',
         ),
-    Test(title='β Ramps, w:[1e2, 1e3, 0, 0, 0, 1e0, 1e-3]\nwith model mismatch and measurement noise, SQP_RTI',
+    Test(title='β Ramps, w:[1e2, 1e3, 0, 0, 0, 1e0, 1e-2]\nwith model mismatch and measurement noise, SQP_RTI',
         V_ref=([5], [1]),
         beta_ref=-30*π/180*ramp,
         r_ref=([0], [1]), 
@@ -617,13 +620,13 @@ TESTS = [
         J_k=0.9,
         V_noise=(0,0.3), # (0, 0.3), #
         beta_noise=(0,0.018), # (0, 0.0174533),
-        mpc_ws=[1e2, 1e3, 0, 0, 0, 1e0, 1e-3],
+        mpc_ws=[1e2, 1e3, 0, 0, 0, 1e0, 1e-2],
         T_tot=tt_tot, x_eq=x_eq0, x0=x0_standstill,
         qp_solver_iter_max=5, 
         nlp_solver_max_iter=5,
         nlp_solver_type='SQP_RTI',
         ),
-    Test(title='V Ramps, w:[1e2, 1e3, 0, 0, 0, 1e0, 1e-3]\nwith model mismatch and measurement noise, SQP_RTI',
+    Test(title='V Ramps, w:[1e2, 1e3, 0, 0, 0, 1e0, 1e-2]\nwith model mismatch and measurement noise, SQP_RTI',
         V_ref=3+7*ramp,
         beta_ref=([-25*π/180], [1]),
         r_ref=([0], [1]), 
@@ -636,15 +639,15 @@ TESTS = [
         J_k=0.9,
         V_noise=(0,0.3), # (0, 0.3), #
         beta_noise=(0,0.018), # (0, 0.0174533),
-        mpc_ws=[1e2, 1e3, 0, 0, 0, 1e0, 1e-3],
+        mpc_ws=[1e2, 1e3, 0, 0, 0, 1e0, 1e-2],
         T_tot=tt_tot, x_eq=x_eq0, x0=x0_standstill,
         qp_solver_iter_max=5, 
         nlp_solver_max_iter=5,
         nlp_solver_type='SQP_RTI',
         ),
-    Test(title='Steps β and V, w:[1e2, 1e3, 0, 0, 0, 1e0, 1e-3]\nwith model mismatch and measurement noise, SQP_RTI',
+    Test(title='Steps β and V, w:[1e2, 1e3, 0, 0, 0, 1e0, 1e-2]\nwith model mismatch and measurement noise, SQP_RTI',
         V_ref=([4, 7, 4], [1/3, 1/3, 1/3]),
-        beta_ref=([-0.52, 0.52], [1/2, 1/2]),
+        beta_ref=([-30*π/180, 30*π/180], [1/2, 1/2]),
         r_ref=([0], [1]), 
         delta_ref=([0], [1]), 
         Fx_ref=([0], [1]),
@@ -655,15 +658,15 @@ TESTS = [
         J_k=0.9,
         V_noise=(0,0.3), # (0, 0.3), #
         beta_noise=(0,0.018), # (0, 0.0174533),
-        mpc_ws=[1e2, 1e3, 0, 0, 0, 1e0, 1e-3],
+        mpc_ws=[1e2, 1e3, 0, 0, 0, 1e0, 1e-2],
         T_tot=12.0, x_eq=x_eq0, x0=x0_standstill,
         qp_solver_iter_max=5,
         nlp_solver_max_iter=5,
         nlp_solver_type='SQP_RTI',
         ),
-    Test(title='Steps β and V, w:[1e2, 1e3, 0, 0, 0, 1e0, 1e-3]\nwith model mismatch and measurement noise, SQP_RTI',
+    Test(title='Steps β and V, w:[1e2, 1e3, 0, 0, 0, 1e0, 1e-2]\nwith model mismatch and measurement noise, SQP_RTI',
         V_ref=([7, 4, 7], [1/3, 1/3, 1/3]),
-        beta_ref=([-0.52, 0.52], [1/2, 1/2]),
+        beta_ref=([-25*π/180, 25*π/180], [1/2, 1/2]),
         r_ref=([0], [1]), 
         delta_ref=([0], [1]), 
         Fx_ref=([0], [1]),
@@ -674,15 +677,15 @@ TESTS = [
         J_k=0.9,
         V_noise=(0,0.3), # (0, 0.3), #
         beta_noise=(0,0.018), # (0, 0.0174533),
-        mpc_ws=[1e2, 1e3, 0, 0, 0, 1e0, 1e-3],
+        mpc_ws=[1e2, 1e3, 0, 0, 0, 1e0, 1e-2],
         T_tot=12.0, x_eq=x_eq0, x0=x0_standstill,
         qp_solver_iter_max=5,
         nlp_solver_max_iter=5,
         nlp_solver_type='SQP_RTI',
         ),
-    Test(title='Steps β and V, w:[1e2, 1e3, 0, 0, 0, 1e0, 1e-3]\nwith model mismatch and measurement noise, SQP_RTI',
+    Test(title='Steps β and V, w:[1e2, 1e3, 0, 0, 0, 1e1, 1e-2]\nwith model mismatch and measurement noise, SQP_RTI',
         V_ref=([7, 4, 7], [1/3, 1/3, 1/3]),
-        beta_ref=([-0.52, 0.52, -0.52], [1/3, 1/3, 1/3]),
+        beta_ref=([-25*π/180, 25*π/180, -25*π/180], [1/3, 1/3, 1/3]),
         r_ref=([0], [1]), 
         delta_ref=([0], [1]), 
         Fx_ref=([0], [1]),
@@ -693,7 +696,7 @@ TESTS = [
         J_k=0.9,
         V_noise=(0,0.3), # (0, 0.3), #
         beta_noise=(0,0.018), # (0, 0.0174533),
-        mpc_ws=[1e2, 1e3, 0, 0, 0, 1e0, 1e-3],
+        mpc_ws=[1e2, 1e3, 0, 0, 0, 1e1, 1e-2],
         T_tot=12.0, x_eq=x_eq0, x0=x0_standstill,
         qp_solver_iter_max=5, 
         nlp_solver_max_iter=5,
@@ -718,6 +721,8 @@ while n_test < len(TESTS): # repeat tests until they all converge
     print(f"Test {n_test+1}/{len(TESTS)}: {test.title}")
 
     clear_previous_simulation()
+    np.random.seed(0) # set random seed for reproducibility
+
     # define simulation fundamental time step [s]
     ts_sim = 0.001
 
@@ -967,6 +972,11 @@ while n_test < len(TESTS): # repeat tests until they all converge
     time        = np.linspace(0, ts_sim * N_steps, N_steps + 1)
     time_mpc    = np.linspace(0, Ts * (N_steps_dt-1), N_steps_dt+1)
 
+    # Assert there are no NaNs in simX
+    if np.isnan(simX).any():
+        print("simX contains NaN values! Retrying the test...")
+        continue  
+
     y_ref_plot = piecewise_constant(y_ref_nolookahead[:-1], [Ts]*(y_ref_nolookahead.shape[0]-1), ts_sim)[0]
     errors = np.abs(y_ref_plot[:,:3] - simX[:,:3])
 
@@ -1049,37 +1059,40 @@ while n_test < len(TESTS): # repeat tests until they all converge
     print(f"Final state: V={simX[-1,0]:.2f} m/s, Beta={np.rad2deg(simX[-1,1]):.2f} deg, Yaw rate={np.rad2deg(simX[-1,2]):.2f} deg/s, Delta={np.rad2deg(simX[-1,3]):.2f} deg, Fx={simX[-1,4]:.2f} N")
 
 
-    # animation
-    save_fps = 30.0
-    # save_fps = 20.0
-    try:
-        anim = car_anim(
-            xs=simX[:,:3],  # use the state vector as input
-            # us=piecewise_constant(simU, [Ts]*simU.shape[0], ts_sim)[0],
-            us=piecewise_constant(simX[:-1,3:5], [ts_sim]*(simX.shape[0]-1), ts_sim)[0],
-            ic=np.array([0, 0, π/2]),  # initial conditions (x, y, ψ) 
-            dt=ts_sim,  # time step
-            fps=save_fps,  # frames per second
-            speed=2.0,  # speed factor for the animation 
-            # follow=True,  # follow the car in the animation
-            title=test.title,  # title of the animation
-            # get_video=True,  # get video instead of jshtml
-            static_img=GO_FAST,  # use static image instead of animation
-            no_notebook=True,  # do not use notebook mode
-        )  # run the car animation with the STM results
 
-        if GO_FAST:
-            plt.savefig(f'generated_figures/{save_title}_anim.png', dpi=300, bbox_inches='tight')
-            if len(TESTS) <= 2: plt.show()
-        else:
-            anim.save(f'generated_figures/{save_title}.mp4', fps=save_fps, extra_args=['-vcodec', 'libx264']) # save animation as mp4
-            # convert to gif using ffmpeg command
-            os.system(f'ffmpeg -loglevel error -y -i generated_figures/{save_title}.mp4 -vf "fps={save_fps},scale=1920:-1:flags=lanczos" generated_figures/{save_title}.gif')
-            # os.system(f'ffmpeg -loglevel error -y -i generated_figures/{save_title}.mp4 -vf "fps=60,scale=1080:-1:flags=lanczos" generated_figures/{save_title}_60fps.gif')
-        n_test += 1  # increment test number for the next test 
-    
-    except Exception as e: 
-        print(f'Failed test: {test.title} -> {e}. Retrying...')
+    if not SKIP_ANIM: 
+        # animation
+        save_fps = 30.0
+        # save_fps = 20.0
+        try:
+            anim = car_anim(
+                xs=simX[:,:3],  # use the state vector as input
+                # us=piecewise_constant(simU, [Ts]*simU.shape[0], ts_sim)[0],
+                us=piecewise_constant(simX[:-1,3:5], [ts_sim]*(simX.shape[0]-1), ts_sim)[0],
+                ic=np.array([0, 0, π/2]),  # initial conditions (x, y, ψ) 
+                dt=ts_sim,  # time step
+                fps=save_fps,  # frames per second
+                speed=2.0,  # speed factor for the animation 
+                # follow=True,  # follow the car in the animation
+                title=test.title,  # title of the animation
+                # get_video=True,  # get video instead of jshtml
+                static_img=GO_FAST,  # use static image instead of animation
+                no_notebook=True,  # do not use notebook mode
+            )  # run the car animation with the STM results
+
+            if GO_FAST:
+                plt.savefig(f'generated_figures/{save_title}_anim.png', dpi=300, bbox_inches='tight')
+                if len(TESTS) <= 2: plt.show()
+            else:
+                anim.save(f'generated_figures/{save_title}.mp4', fps=save_fps, extra_args=['-vcodec', 'libx264']) # save animation as mp4
+                # convert to gif using ffmpeg command
+                os.system(f'ffmpeg -loglevel error -y -i generated_figures/{save_title}.mp4 -vf "fps={save_fps},scale=1920:-1:flags=lanczos" generated_figures/{save_title}.gif')
+                # os.system(f'ffmpeg -loglevel error -y -i generated_figures/{save_title}.mp4 -vf "fps=60,scale=1080:-1:flags=lanczos" generated_figures/{save_title}_60fps.gif')
+        
+        except Exception as e: 
+            print(f'Failed test: {test.title} -> {e}. Retrying...')
+        
+    n_test += 1  # increment test number for the next test 
 
     plt.close('all')
 
