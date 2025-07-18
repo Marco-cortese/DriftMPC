@@ -12,7 +12,8 @@ from scipy.io import loadmat # importing loadmat to read .mat files
 from tqdm import tqdm # for progress bar
 import matplotlib.pyplot as plt # for plotting
 # Set plotting style
-plt.style.use('dark_background')
+# plt.style.use('dark_background')
+plt.style.use('default')
 plt.rcParams['figure.figsize'] = (10, 6)
 plt.rcParams['axes.grid'] = True
 plt.rcParams['grid.alpha'] = 0.3
@@ -227,33 +228,46 @@ def car_anim(xs, us, dt, ic=(0.0,0.0,0.0), follow=False, fps=60.0, speed=1.0, ti
     ax[1].set_ylabel('y [m]')
     
 
-    slip = ax[1].scatter(xs, ys, c=np.abs(np.rad2deg(βs)), s=2, cmap=CM, vmin=0, vmax=30, alpha=0.6)
+    slip = ax[1].scatter(xs, ys, c=np.abs(np.rad2deg(βs)), s=2, cmap=CM, vmin=0, vmax=30, alpha=1)
     cbar = plt.colorbar(slip, ax=ax[1], label='β [deg]')
     if not static_img: 
 
         # in the 0 ax plot 2 bars with the Fx and δ values updating in time
         max_drift_angle = 40*π/180 # [deg] maximum drift angle for the bar plot
-        bar = ax[0].bar([1,2,3], [Fxs[0], drifts[0]*MAX_FX/max_drift_angle, np.abs(δs[0]*MAX_FX/max_drift_angle)], color='orange')
+        bar = ax[0].bar([1,2,3,4], [Fxs[0], drifts[0]*MAX_FX/max_drift_angle, π*vs[0]*MAX_FX/max_drift_angle/180, np.abs(δs[0]*MAX_FX/max_drift_angle)], color='orange')
         ax0b = ax[0].twinx()  # create a twin axis
-        ax[0].set_xticks([1, 2, 3])
-        ax[0].set_xticklabels(['Fx', 'β', 'δ'])
+        ax[0].set_xticks([1, 2, 3, 4])
+        ax[0].set_xticklabels(['Fx', 'β', 'V', 'δ'])
         ax[0].set_ylim(0, MAX_FX)
-        ax[0].grid(False), ax0b.grid(False)  # disable grid for the bar plot
+        ax[0].set_ylabel('Force [N]')
+        ax[0].grid(axis='y', which='both', linestyle='-')
+        ax[0].grid(axis='x', which='both', visible=False)
+        ax0b.grid(axis='y', which='both', linestyle='-')
+        ax0b.grid(axis='x', which='both', visible=False)
         ax0b.set_ylim(0, max_drift_angle*180/π)  # set the limits of the twin axis
+        ax0b.set_ylabel('Angle [deg] / Speed [m/s]')
         
-    fig.suptitle(title)
+    fig.suptitle(title, fontsize=16)
 
     plt.tight_layout()
 
     # create initial plots for the car and wheels
     car, wrl, wrr, wfl, wfr = get_car_shapes(xs[0], ys[0], ψs[0], δs[0])
-    wheel_color, wheel_alpha = 'white', 1  # wheel color and alpha
-    body_color, body_alpha = 'white', 0.7  # body color and alpha    
+    wheel_color, wheel_alpha = 'black', 1  # wheel color and alpha
+    body_color, body_alpha = 'black', 0.7  # body color and alpha    
+
+    # Plot car outline
     car_plot, = ax[1].plot(car[:, 0], car[:, 1], color=body_color, alpha=body_alpha)
+    # Plot and fill wheels
     wrl_plot, = ax[1].plot(wrl[:, 0], wrl[:, 1], color=wheel_color, alpha=wheel_alpha)
     wrr_plot, = ax[1].plot(wrr[:, 0], wrr[:, 1], color=wheel_color, alpha=wheel_alpha)
     wfl_plot, = ax[1].plot(wfl[:, 0], wfl[:, 1], color=wheel_color, alpha=wheel_alpha)
     wfr_plot, = ax[1].plot(wfr[:, 0], wfr[:, 1], color=wheel_color, alpha=wheel_alpha)
+    # Fill wheels
+    wrl_fill = ax[1].fill(wrl[:, 0], wrl[:, 1], color=wheel_color, alpha=0.5)
+    wrr_fill = ax[1].fill(wrr[:, 0], wrr[:, 1], color=wheel_color, alpha=0.5)
+    wfl_fill = ax[1].fill(wfl[:, 0], wfl[:, 1], color=wheel_color, alpha=0.5)
+    wfr_fill = ax[1].fill(wfr[:, 0], wfr[:, 1], color=wheel_color, alpha=0.5)
 
     k_static = 8.0 if static_img else 1.0  # 5 speed factor for static images 
 
@@ -263,16 +277,17 @@ def car_anim(xs, us, dt, ic=(0.0,0.0,0.0), follow=False, fps=60.0, speed=1.0, ti
     Fxs = Fxs[::int(fps*speed*k_static)]
     δs = δs[::int(fps*speed*k_static)]
     drifts = drifts[::int(fps*speed*k_static)]
+    vs = vs[::int(fps*speed*k_static)]
 
     if static_img: # plot all the frames as static images
         for i in tqdm(range(len(xs)), desc='Plotting frames', leave=False):
             car, wrl, wrr, wfl, wfr = get_car_shapes(xs[i], ys[i], ψs[i], δs[i])
             col = plt.get_cmap(CM)(i / len(xs))
             ax[1].plot(car[:, 0], car[:, 1], color=col, alpha=body_alpha)
-            ax[1].plot(wrl[:, 0], wrl[:, 1], color=col, alpha=wheel_alpha)
-            ax[1].plot(wrr[:, 0], wrr[:, 1], color=col, alpha=wheel_alpha)
-            ax[1].plot(wfl[:, 0], wfl[:, 1], color=col, alpha=wheel_alpha)
-            ax[1].plot(wfr[:, 0], wfr[:, 1], color=col, alpha=wheel_alpha)
+            ax[1].fill(wrl[:, 0], wrl[:, 1], color=col, alpha=0.5)
+            ax[1].fill(wrr[:, 0], wrr[:, 1], color=col, alpha=0.5)
+            ax[1].fill(wfl[:, 0], wfl[:, 1], color=col, alpha=0.5)
+            ax[1].fill(wfr[:, 0], wfr[:, 1], color=col, alpha=0.5)
         return fig
 
     else: # create the animation
@@ -285,11 +300,15 @@ def car_anim(xs, us, dt, ic=(0.0,0.0,0.0), follow=False, fps=60.0, speed=1.0, ti
             wrr_plot.set_data(wrr[:, 0], wrr[:, 1])
             wfl_plot.set_data(wfl[:, 0], wfl[:, 1])
             wfr_plot.set_data(wfr[:, 0], wfr[:, 1])
+            # Update the filled wheels
+            for poly, verts in zip([wrl_fill[0], wrr_fill[0], wfl_fill[0], wfr_fill[0]], [wrl, wrr, wfl, wfr]):
+                poly.set_xy(verts)
 
             # update bar plot
             bar[0].set_height(Fxs[frame])
             bar[1].set_height(drifts[frame]*MAX_FX/max_drift_angle)
-            bar[2].set_height(np.abs(δs[frame]*MAX_FX/max_drift_angle))
+            bar[2].set_height(π*vs[frame]*MAX_FX/max_drift_angle/180)
+            bar[3].set_height(np.abs(δs[frame]*MAX_FX/max_drift_angle))
 
             if follow:
                 # set the limits of the axis
@@ -297,7 +316,7 @@ def car_anim(xs, us, dt, ic=(0.0,0.0,0.0), follow=False, fps=60.0, speed=1.0, ti
                 ax[1].set_xlim(xs[frame] - window_size, xs[frame] + window_size)
                 ax[1].set_ylim(ys[frame] - window_size, ys[frame] + window_size)
 
-            return car_plot, wrl_plot, wrr_plot, wfl_plot, wfr_plot
+            return car_plot, wrl_plot, wrr_plot, wfl_plot, wfr_plot, wrl_fill[0], wrr_fill[0], wfl_fill[0], wfr_fill[0]
 
         # Create the animation
         anim = FuncAnimation(fig, update, frames=len(xs), interval=1000/fps, blit=True)

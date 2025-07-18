@@ -323,14 +323,14 @@ class Test():
                     delta_ub=MAX_DELTA,
                     Fx_lb=MIN_FX,
                     Fx_ub=MAX_FX,
-                    x0=[1, 0, 0, 0, 0],
+                    x0=[2, 0, 0, 0, 0],
                     u0=[0, 0],
                     mpc_ws=[1e2, 1e3, 0, 0, 0, 1e1, 1e-2],
-                    V_ref=([4.49], [1]),
-                    beta_ref=([-0.52, 0.52, -0.52], [1/3, 1/3, 1/3]),
-                    r_ref=([1.5], [1]),
-                    delta_ref=([-0.116], [1]),
-                    Fx_ref=([46.64], [1]),
+                    V_ref=([0], [1]),
+                    beta_ref=([0], [1]),
+                    r_ref=([10], [1]),
+                    delta_ref=([0], [1]),
+                    Fx_ref=([0], [1]),
                     shifting=False,
                     ref_preview=True,
                     V_noise=(0,0), # (0, 0.3), #
@@ -381,9 +381,11 @@ class Test():
 
 ## PARAMETERS
 GO_FAST = False # save figs instead of videos to run tests faster
-GO_FAST = True # save figs instead of videos to run tests faster
+# GO_FAST = True # save figs instead of videos to run tests faster
 
 x_eq0 = [4.510306923563673, -0.4363323129985824, 1.503435641187891, -0.13754984841368398, 45.87960340367423]
+
+x0_standstill = [1.0, -0.01, 0.01, 0.0, 0.0] # initial condition for standstill tests
 
 # tracking tests
 tt_tot = 15.0 # total time for tracking tests
@@ -399,41 +401,40 @@ beta_ref1 = (25*np.sin(2*2*π*ttime_vector/tt_tot)).reshape(-1,1)*π/180
 V_ref0 = (5 + 1.5*np.sin(2*2*π*ttime_vector/tt_tot)).reshape(-1,1) # 4.5 m/s + 0.5 m/s sinusoidal
 
 TESTS = [
-    Test(), # default test
-    Test(title='Open loop from Equilibrium, same model',
-        T_tot=3.0, x_eq=x_eq0, x0=x_eq0, open_loop=True),
-    Test(title='Open loop from Equilibrium, model mismatch',
-        sim_tire_f=pacejka_ca,
-        V_ref=([x_eq0[0]], [1]), 
-        beta_ref=([x_eq0[1]], [1]), 
-        r_ref=([x_eq0[2]], [1]), 
-        delta_ref=([x_eq0[3]], [1]), 
-        Fx_ref=([x_eq0[4]], [1]),
-        T_tot=3.0, x_eq=x_eq0, x0=x_eq0, open_loop=True),
-    Test(title='MPC from Equilibrium, model mismatch, w:[1e2, 1e3, 1e2, 0, 0, 1e1, 1e-2]',
-        sim_tire_f=pacejka_ca, 
-        V_ref=([x_eq0[0]], [1]), 
-        beta_ref=([x_eq0[1]], [1]), 
-        r_ref=([x_eq0[2]], [1]), 
-        delta_ref=([x_eq0[3]], [1]), 
-        Fx_ref=([x_eq0[4]], [1]),
-        mpc_ws=[1e2, 1e3, 1e2, 0, 0, 1e1, 1e-2],
-        T_tot=3.0, x_eq=x_eq0, x0=x_eq0),
-    Test(title='Open loop from Equilibrium, 1% IC deviation',
-        V_ref=([x_eq0[0]], [1]), 
-        beta_ref=([x_eq0[1]], [1]), 
-        r_ref=([x_eq0[2]], [1]), 
-        delta_ref=([x_eq0[3]], [1]), 
-        Fx_ref=([x_eq0[4]], [1]),
-        T_tot=3.0, x_eq=x_eq0, x0=[x*0.99 for x in x_eq0], open_loop=True),
-    Test(title='MPC from Equilibrium, 1% IC deviation, w:[1e2, 1e3, 1e2, 0, 0, 1e1, 1e-2]',
-        V_ref=([x_eq0[0]], [1]), 
-        beta_ref=([x_eq0[1]], [1]), 
-        r_ref=([x_eq0[2]], [1]), 
-        delta_ref=([x_eq0[3]], [1]), 
-        Fx_ref=([x_eq0[4]], [1]),
-        mpc_ws=[1e2, 1e3, 1e2, 0, 0, 1e1, 1e-2],
-        T_tot=3.0, x_eq=x_eq0, x0=[x*0.99 for x in x_eq0]),
+    # Test(title='Open loop from Equilibrium, same model',
+    #     T_tot=3.0, x_eq=x_eq0, x0=x_eq0, open_loop=True),
+    # Test(title='Open loop from Equilibrium, model mismatch',
+    #     sim_tire_f=pacejka_ca,
+    #     V_ref=([x_eq0[0]], [1]), 
+    #     beta_ref=([x_eq0[1]], [1]), 
+    #     r_ref=([x_eq0[2]], [1]), 
+    #     delta_ref=([x_eq0[3]], [1]), 
+    #     Fx_ref=([x_eq0[4]], [1]),
+    #     T_tot=3.0, x_eq=x_eq0, x0=x_eq0, open_loop=True),
+    # Test(title='MPC from Equilibrium, model mismatch, w:[1e2, 1e3, 1e2, 0, 0, 1e1, 1e-2]',
+    #     sim_tire_f=pacejka_ca, 
+    #     V_ref=([x_eq0[0]], [1]), 
+    #     beta_ref=([x_eq0[1]], [1]), 
+    #     r_ref=([x_eq0[2]], [1]), 
+    #     delta_ref=([x_eq0[3]], [1]), 
+    #     Fx_ref=([x_eq0[4]], [1]),
+    #     mpc_ws=[1e2, 1e3, 1e2, 0, 0, 1e1, 1e-2],
+    #     T_tot=3.0, x_eq=x_eq0, x0=x_eq0),
+    # Test(title='Open loop from Equilibrium, 1% IC deviation',
+    #     V_ref=([x_eq0[0]], [1]), 
+    #     beta_ref=([x_eq0[1]], [1]), 
+    #     r_ref=([x_eq0[2]], [1]), 
+    #     delta_ref=([x_eq0[3]], [1]), 
+    #     Fx_ref=([x_eq0[4]], [1]),
+    #     T_tot=3.0, x_eq=x_eq0, x0=[x*0.99 for x in x_eq0], open_loop=True),
+    # Test(title='MPC from Equilibrium, 1% IC deviation, w:[1e2, 1e3, 1e2, 0, 0, 1e1, 1e-2]',
+    #     V_ref=([x_eq0[0]], [1]), 
+    #     beta_ref=([x_eq0[1]], [1]), 
+    #     r_ref=([x_eq0[2]], [1]), 
+    #     delta_ref=([x_eq0[3]], [1]), 
+    #     Fx_ref=([x_eq0[4]], [1]),
+    #     mpc_ws=[1e2, 1e3, 1e2, 0, 0, 1e1, 1e-2],
+    #     T_tot=3.0, x_eq=x_eq0, x0=[x*0.99 for x in x_eq0]),
     Test(title='MPC from Equilibrium, 30% IC deviation, w:[1e2, 1e3, 1e2, 0, 0, 1e1, 1e-2]',
         V_ref=([x_eq0[0]], [1]), 
         beta_ref=([x_eq0[1]], [1]), 
@@ -442,125 +443,125 @@ TESTS = [
         Fx_ref=([x_eq0[4]], [1]),
         mpc_ws=[1e2, 1e3, 1e2, 0, 0, 1e1, 1e-2],
         T_tot=6.0, x_eq=x_eq0, x0=[x*1.3 for x in x_eq0]),
-    Test(title='MPC from Equilibrium, weight only β, w:[0, 1e3, 0, 0, 0, 1e1, 1e-2]',
-        V_ref=([x_eq0[0]], [1]), 
-        beta_ref=([x_eq0[1]], [1]), 
-        r_ref=([x_eq0[2]], [1]), 
-        delta_ref=([x_eq0[3]], [1]), 
-        Fx_ref=([x_eq0[4]], [1]),
-        mpc_ws=[0, 1e3, 0, 0, 0, 1e1, 1e-2],
-        T_tot=12.0, x_eq=x_eq0, x0=[x*1.3 for x in x_eq0]),
-    Test(title='MPC from Equilibrium, -30% IC, weight only V and r, w:[1e2, 0, 1e2, 0, 0, 1e1, 1e-2]',
-        V_ref=([x_eq0[0]], [1]), 
-        beta_ref=([x_eq0[1]], [1]), 
-        r_ref=([x_eq0[2]], [1]), 
-        delta_ref=([x_eq0[3]], [1]), 
-        Fx_ref=([x_eq0[4]], [1]),
-        mpc_ws=[1e2, 0, 1e2, 0, 0, 1e1, 1e-2],
-        T_tot=6.0, x_eq=x_eq0, x0=[x*0.7 for x in x_eq0]),
-    Test(title='MPC from Equilibrium, +30% IC, weight only V and r, w:[1e2, 0, 1e2, 0, 0, 1e1, 1e-2]',
-        V_ref=([x_eq0[0]], [1]), 
-        beta_ref=([x_eq0[1]], [1]), 
-        r_ref=([x_eq0[2]], [1]), 
-        delta_ref=([x_eq0[3]], [1]), 
-        Fx_ref=([x_eq0[4]], [1]),
-        mpc_ws=[1e2, 0, 1e2, 0, 0, 1e1, 1e-2],
-        T_tot=6.0, x_eq=x_eq0, x0=[x*1.3 for x in x_eq0]),
-    Test(title='MPC from standstill, w:[1e2, 1e3, 1e2, 0, 0, 1e1, 1e-2]',
-        V_ref=([x_eq0[0]], [1]), 
-        beta_ref=([x_eq0[1]], [1]), 
-        r_ref=([x_eq0[2]], [1]), 
-        delta_ref=([x_eq0[3]], [1]), 
-        Fx_ref=([x_eq0[4]], [1]),
-        mpc_ws=[1e2, 1e3, 1e2, 0, 0, 1e1, 1e-2],
-        T_tot=6.0, x_eq=x_eq0, x0=[2,0,0,0,0]),
-    Test(title='MPC from standstill, w:[1e2, 1e3, 1e2, 0, 0, 1e1, 1e-2]\nwith model mismatch',
-        V_ref=([x_eq0[0]], [1]), 
-        beta_ref=([x_eq0[1]], [1]), 
-        r_ref=([x_eq0[2]], [1]), 
-        delta_ref=([x_eq0[3]], [1]), 
-        Fx_ref=([x_eq0[4]], [1]),
-        sim_model_f=DTM_model_dt_inputs_sim, 
-        sim_tire_f=pacejka_ca, 
-        μ_err=-0.05, 
-        stiff_k=1.05, 
-        J_k=0.9,
-        mpc_ws=[1e2, 1e3, 1e2, 0, 0, 1e1, 1e-2],
-        T_tot=6.0, x_eq=x_eq0, x0=[2,0,0,0,0]),
-    Test(title='MPC from standstill, w:[1e2, 1e3, 1e2, 0, 0, 1e1, 1e-2]\nwith model mismatch and measurement noise',
-        V_ref=([x_eq0[0]], [1]), 
-        beta_ref=([x_eq0[1]], [1]), 
-        r_ref=([x_eq0[2]], [1]), 
-        delta_ref=([x_eq0[3]], [1]), 
-        Fx_ref=([x_eq0[4]], [1]),
-        sim_model_f=DTM_model_dt_inputs_sim, 
-        sim_tire_f=pacejka_ca, 
-        μ_err=-0.05, 
-        stiff_k=1.05, 
-        J_k=0.9,
-        V_noise=(0,0.3), # (0, 0.3), #
-        beta_noise=(0,0.018), # (0, 0.0174533),
-        mpc_ws=[1e2, 1e3, 1e2, 0, 0, 1e1, 1e-2],
-        T_tot=6.0, x_eq=x_eq0, x0=[2,0,0,0,0],
-        qp_solver_iter_max=20,
-        nlp_solver_type='SQP', # 'SQP_RTI' or 'SQP'
-        nlp_solver_max_iter=40),
-    Test(title='MPC from standstill, w:[1e2, 1e3, 1e2, 0, 0, 1e1, 1e-2]\nwith model mismatch and measurement noise, SQP_RTI',
-        V_ref=([x_eq0[0]], [1]), 
-        beta_ref=([x_eq0[1]], [1]), 
-        r_ref=([x_eq0[2]], [1]), 
-        delta_ref=([x_eq0[3]], [1]), 
-        Fx_ref=([x_eq0[4]], [1]),
-        sim_model_f=DTM_model_dt_inputs_sim, 
-        sim_tire_f=pacejka_ca, 
-        μ_err=-0.05, 
-        stiff_k=1.05, 
-        J_k=0.9,
-        V_noise=(0,0.3), # (0, 0.3), #
-        beta_noise=(0,0.018), # (0, 0.0174533),
-        mpc_ws=[1e2, 1e3, 1e2, 0, 0, 1e1, 1e-2],
-        T_tot=6.0, x_eq=x_eq0, x0=[2,0,0,0,0],
-        qp_solver_iter_max=5,
-        nlp_solver_max_iter=5,
-        nlp_solver_type='SQP_RTI'), # 'SQP_RTI' or 'SQP'
-    Test(title='Sinusoidal β reference 1, w:[1e2, 1e3, 0, 0, 0, 1e1, 1e-2]\nwith model mismatch and measurement noise, SQP_RTI',
-        V_ref=([x_eq0[0]], [1]), 
-        beta_ref=beta_ref0, 
-        r_ref=([0], [1]), 
-        delta_ref=([0], [1]), 
-        Fx_ref=([0], [1]),
-        sim_model_f=DTM_model_dt_inputs_sim, 
-        sim_tire_f=pacejka_ca, 
-        μ_err=-0.05, 
-        stiff_k=1.05, 
-        J_k=0.9,
-        V_noise=(0,0.3), # (0, 0.3), #
-        beta_noise=(0,0.018), # (0, 0.0174533),
-        mpc_ws=[1e2, 1e3, 0, 0, 0, 1e1, 1e-2],
-        T_tot=tt_tot, x_eq=x_eq0, x0=[2,0,0,0,0], Ts=tTs,
-        qp_solver_iter_max=5,
-        nlp_solver_max_iter=5,
-        nlp_solver_type='SQP_RTI',
-        ),
-    Test(title='Sinusoidal β reference 2, w:[1e2, 1e3, 0, 0, 0, 1e1, 1e-2]\nwith model mismatch and measurement noise, SQP_RTI',
-        V_ref=([x_eq0[0]], [1]), 
-        beta_ref=beta_ref1, 
-        r_ref=([0], [1]), 
-        delta_ref=([0], [1]), 
-        Fx_ref=([0], [1]),
-        sim_model_f=DTM_model_dt_inputs_sim, 
-        sim_tire_f=pacejka_ca, 
-        μ_err=-0.05, 
-        stiff_k=1.05, 
-        J_k=0.9,
-        V_noise=(0,0.3), # (0, 0.3), #
-        beta_noise=(0,0.018), # (0, 0.0174533),
-        mpc_ws=[1e2, 1e3, 0, 0, 0, 1e1, 1e-2],
-        T_tot=tt_tot, x_eq=x_eq0, x0=[2,0,0,0,0], Ts=tTs,
-        qp_solver_iter_max=5,
-        nlp_solver_max_iter=5,
-        nlp_solver_type='SQP_RTI',
-        ),
+    # Test(title='MPC from Equilibrium, weight only β, w:[0, 1e3, 0, 0, 0, 1e1, 1e-2]',
+    #     V_ref=([x_eq0[0]], [1]), 
+    #     beta_ref=([x_eq0[1]], [1]), 
+    #     r_ref=([x_eq0[2]], [1]), 
+    #     delta_ref=([x_eq0[3]], [1]), 
+    #     Fx_ref=([x_eq0[4]], [1]),
+    #     mpc_ws=[0, 1e3, 0, 0, 0, 1e1, 1e-2],
+    #     T_tot=12.0, x_eq=x_eq0, x0=[x*1.3 for x in x_eq0]),
+    # Test(title='MPC from Equilibrium, -30% IC, weight only V and r, w:[1e2, 0, 1e2, 0, 0, 1e1, 1e-2]',
+    #     V_ref=([x_eq0[0]], [1]), 
+    #     beta_ref=([x_eq0[1]], [1]), 
+    #     r_ref=([x_eq0[2]], [1]), 
+    #     delta_ref=([x_eq0[3]], [1]), 
+    #     Fx_ref=([x_eq0[4]], [1]),
+    #     mpc_ws=[1e2, 0, 1e2, 0, 0, 1e1, 1e-2],
+    #     T_tot=6.0, x_eq=x_eq0, x0=[x*0.7 for x in x_eq0]),
+    # Test(title='MPC from Equilibrium, +30% IC, weight only V and r, w:[1e2, 0, 1e2, 0, 0, 1e1, 1e-2]',
+    #     V_ref=([x_eq0[0]], [1]), 
+    #     beta_ref=([x_eq0[1]], [1]), 
+    #     r_ref=([x_eq0[2]], [1]), 
+    #     delta_ref=([x_eq0[3]], [1]), 
+    #     Fx_ref=([x_eq0[4]], [1]),
+    #     mpc_ws=[1e2, 0, 1e2, 0, 0, 1e1, 1e-2],
+    #     T_tot=6.0, x_eq=x_eq0, x0=[x*1.3 for x in x_eq0]),
+    # Test(title='MPC from standstill, w:[1e2, 1e3, 1e2, 0, 0, 1e1, 1e-2]',
+    #     V_ref=([x_eq0[0]], [1]), 
+    #     beta_ref=([x_eq0[1]], [1]), 
+    #     r_ref=([x_eq0[2]], [1]), 
+    #     delta_ref=([x_eq0[3]], [1]), 
+    #     Fx_ref=([x_eq0[4]], [1]),
+    #     mpc_ws=[1e2, 1e3, 1e2, 0, 0, 1e1, 1e-2],
+    #     T_tot=6.0, x_eq=x_eq0, x0=x0_standstill),
+    # Test(title='MPC from standstill, w:[1e2, 1e3, 1e2, 0, 0, 1e1, 1e-2]\nwith model mismatch',
+    #     V_ref=([x_eq0[0]], [1]), 
+    #     beta_ref=([x_eq0[1]], [1]), 
+    #     r_ref=([x_eq0[2]], [1]), 
+    #     delta_ref=([x_eq0[3]], [1]), 
+    #     Fx_ref=([x_eq0[4]], [1]),
+    #     sim_model_f=DTM_model_dt_inputs_sim, 
+    #     sim_tire_f=pacejka_ca, 
+    #     μ_err=-0.05, 
+    #     stiff_k=1.05, 
+    #     J_k=0.9,
+    #     mpc_ws=[1e2, 1e3, 1e2, 0, 0, 1e1, 1e-2],
+    #     T_tot=6.0, x_eq=x_eq0, x0=x0_standstill),
+    # Test(title='MPC from standstill, w:[1e2, 1e3, 1e2, 0, 0, 1e1, 1e-2]\nwith model mismatch and measurement noise',
+    #     V_ref=([x_eq0[0]], [1]), 
+    #     beta_ref=([x_eq0[1]], [1]), 
+    #     r_ref=([x_eq0[2]], [1]), 
+    #     delta_ref=([x_eq0[3]], [1]), 
+    #     Fx_ref=([x_eq0[4]], [1]),
+    #     sim_model_f=DTM_model_dt_inputs_sim, 
+    #     sim_tire_f=pacejka_ca, 
+    #     μ_err=-0.05, 
+    #     stiff_k=1.05, 
+    #     J_k=0.9,
+    #     V_noise=(0,0.3), # (0, 0.3), #
+    #     beta_noise=(0,0.018), # (0, 0.0174533),
+    #     mpc_ws=[1e2, 1e3, 1e2, 0, 0, 1e1, 1e-2],
+    #     T_tot=6.0, x_eq=x_eq0, x0=x0_standstill,
+    #     qp_solver_iter_max=20,
+    #     nlp_solver_type='SQP', # 'SQP_RTI' or 'SQP'
+    #     nlp_solver_max_iter=40),
+    # Test(title='MPC from standstill, w:[1e2, 1e3, 1e2, 0, 0, 1e1, 1e-2]\nwith model mismatch and measurement noise, SQP_RTI',
+    #     V_ref=([x_eq0[0]], [1]), 
+    #     beta_ref=([x_eq0[1]], [1]), 
+    #     r_ref=([x_eq0[2]], [1]), 
+    #     delta_ref=([x_eq0[3]], [1]), 
+    #     Fx_ref=([x_eq0[4]], [1]),
+    #     sim_model_f=DTM_model_dt_inputs_sim, 
+    #     sim_tire_f=pacejka_ca, 
+    #     μ_err=-0.05, 
+    #     stiff_k=1.05, 
+    #     J_k=0.9,
+    #     V_noise=(0,0.3), # (0, 0.3), #
+    #     beta_noise=(0,0.018), # (0, 0.0174533),
+    #     mpc_ws=[1e2, 1e3, 1e2, 0, 0, 1e1, 1e-2],
+    #     T_tot=6.0, x_eq=x_eq0, x0=x0_standstill,
+    #     qp_solver_iter_max=5,
+    #     nlp_solver_max_iter=5,
+    #     nlp_solver_type='SQP_RTI'), # 'SQP_RTI' or 'SQP'
+    # Test(title='Sinusoidal β reference 1, w:[1e2, 1e3, 0, 0, 0, 1e1, 1e-2]\nwith model mismatch and measurement noise, SQP_RTI',
+    #     V_ref=([x_eq0[0]], [1]), 
+    #     beta_ref=beta_ref0, 
+    #     r_ref=([0], [1]), 
+    #     delta_ref=([0], [1]), 
+    #     Fx_ref=([0], [1]),
+    #     sim_model_f=DTM_model_dt_inputs_sim, 
+    #     sim_tire_f=pacejka_ca, 
+    #     μ_err=-0.05, 
+    #     stiff_k=1.05, 
+    #     J_k=0.9,
+    #     V_noise=(0,0.3), # (0, 0.3), #
+    #     beta_noise=(0,0.018), # (0, 0.0174533),
+    #     mpc_ws=[1e2, 1e3, 0, 0, 0, 1e1, 1e-2],
+    #     T_tot=tt_tot, x_eq=x_eq0, x0=x0_standstill, Ts=tTs,
+    #     qp_solver_iter_max=5,
+    #     nlp_solver_max_iter=5,
+    #     nlp_solver_type='SQP_RTI',
+    #     ),
+    # Test(title='Sinusoidal β reference 2, w:[1e2, 1e3, 0, 0, 0, 1e1, 1e-2]\nwith model mismatch and measurement noise, SQP_RTI',
+    #     V_ref=([x_eq0[0]], [1]), 
+    #     beta_ref=beta_ref1, 
+    #     r_ref=([0], [1]), 
+    #     delta_ref=([0], [1]), 
+    #     Fx_ref=([0], [1]),
+    #     sim_model_f=DTM_model_dt_inputs_sim, 
+    #     sim_tire_f=pacejka_ca, 
+    #     μ_err=-0.05, 
+    #     stiff_k=1.05, 
+    #     J_k=0.9,
+    #     V_noise=(0,0.3), # (0, 0.3), #
+    #     beta_noise=(0,0.018), # (0, 0.0174533),
+    #     mpc_ws=[1e2, 1e3, 0, 0, 0, 1e1, 1e-2],
+    #     T_tot=tt_tot, x_eq=x_eq0, x0=x0_standstill, Ts=tTs,
+    #     qp_solver_iter_max=5,
+    #     nlp_solver_max_iter=5,
+    #     nlp_solver_type='SQP_RTI',
+    #     ),
     Test(title='Steps β and V reference, w:[1e2, 1e3, 0, 0, 0, 1e1, 1e-2]\nwith model mismatch and measurement noise, SQP_RTI',
         V_ref=([4, 7, 4], [1/3, 1/3, 1/3]),
         beta_ref=([-0.52, 0.52], [1/2, 1/2]),
@@ -575,7 +576,7 @@ TESTS = [
         V_noise=(0,0.3), # (0, 0.3), #
         beta_noise=(0,0.018), # (0, 0.0174533),
         mpc_ws=[1e2, 1e3, 0, 0, 0, 1e1, 1e-2],
-        T_tot=12.0, x_eq=x_eq0, x0=[2,0,0,0,0],
+        T_tot=12.0, x_eq=x_eq0, x0=x0_standstill,
         qp_solver_iter_max=5,
         nlp_solver_max_iter=5,
         nlp_solver_type='SQP_RTI',
@@ -595,7 +596,7 @@ TESTS = [
         V_noise=(0,0.3), # (0, 0.3), #
         beta_noise=(0,0.018), # (0, 0.0174533),
         mpc_ws=[1e2, 1e3, 0, 0, 0, 1e1, 1e-2],
-        T_tot=12.0, x_eq=x_eq0, x0=[2,0,0,0,0],
+        T_tot=12.0, x_eq=x_eq0, x0=x0_standstill,
         qp_solver_iter_max=5, 
         nlp_solver_max_iter=5,
         nlp_solver_type='SQP_RTI',
@@ -614,8 +615,9 @@ else:
 
 
 
-
-for n_test, test in enumerate(TESTS):
+n_test = 0
+while n_test < len(TESTS): # repeat tests until they all converge
+    test = TESTS[n_test]
     print(f"Test {n_test+1}/{len(TESTS)}: {test.title}")
 
     clear_previous_simulation()
@@ -781,6 +783,7 @@ for n_test, test in enumerate(TESTS):
     sim.model = sim_model
     sim.solver_options.T = ts_sim
     sim.solver_options.integrator_type = 'ERK'
+    sim.generate_external_functions() # to hopefully recompile code
 
     acados_integrator = AcadosSimSolver(sim, verbose=False)
 
@@ -810,13 +813,12 @@ for n_test, test in enumerate(TESTS):
     cpt = np.zeros((N_steps_dt,))
 
     # do some initial iterations to start with a good initial guess
-    # for _ in range(5): acados_ocp_solver.solve_for_x0(x0)
     if not test.open_loop: 
         for _ in range(5): acados_ocp_solver.solve_for_x0(x0, fail_on_nonzero_status=False, print_stats_on_failure=False)
 
     # simulation loop
     k = 0 # iteration counter fo control loop
-    for i in tqdm(range(N_steps), desc="Simulation", ascii=False, ncols=75, colour='yellow'):
+    for i in tqdm(range(N_steps), desc=f"Test {n_test+1}", ascii=False, ncols=75, colour='yellow'):
 
         # check whether to update the discrete-time part of the loop
         if(i % n_update == 0):
@@ -875,8 +877,8 @@ for n_test, test in enumerate(TESTS):
     CM = 'jet' #'inferno'
     fig = plt.figure(figsize=(16, 9))
     plt.subplot(4,2,1)
-    plt.plot(time_mpc, y_ref_nolookahead[:, 0], label='V_ref')
-    plt.plot(time, simX[:, 0], linestyle='--', label='V')
+    plt.plot(time, simX[:, 0], label='V')
+    plt.plot(time_mpc, y_ref_nolookahead[:, 0], linestyle='--', label='V_ref')
     plt.title('Velocity, V')
     plt.xlabel('Time [s]')
     plt.ylabel('V [m/s]')
@@ -886,11 +888,12 @@ for n_test, test in enumerate(TESTS):
     plt.subplot(4,2,2)
     plt.plot(time, errors[:,0], label='error')
     plt.title('Error Velocity')
+    plt.ylim(0, max(0.1, np.max(errors[:,0])))
     plt.xlabel('Time [s]')
 
     plt.subplot(4,2,3)
-    plt.plot(time_mpc, np.rad2deg(y_ref_nolookahead[:, 1]), label='beta_ref')
-    plt.plot(time, np.rad2deg(simX[:, 1]), linestyle='--', label='beta')
+    plt.plot(time, np.rad2deg(simX[:, 1]), label='β')
+    plt.plot(time_mpc, np.rad2deg(y_ref_nolookahead[:, 1]), linestyle='--', label='β_ref')
     plt.title('Sideslip Angle, β')
     plt.xlabel('Time [s]') 
     plt.ylabel('β [deg]')
@@ -900,11 +903,12 @@ for n_test, test in enumerate(TESTS):
     plt.subplot(4,2,4)
     plt.plot(time, np.rad2deg(errors[:,1]), label='error')
     plt.title('Error Sideslip Angle')
+    plt.ylim(0, max(0.1, np.max(np.rad2deg(errors[:,1]))))
     plt.xlabel('Time [s]')
 
     plt.subplot(4,2,5)
-    plt.plot(time_mpc, np.rad2deg(y_ref_nolookahead[:, 2]), label='r_ref')
-    plt.plot(time, np.rad2deg(simX[:, 2]), linestyle='--', label='r')
+    plt.plot(time, np.rad2deg(simX[:, 2]), label='r')
+    plt.plot(time_mpc, np.rad2deg(y_ref_nolookahead[:, 2]), linestyle='--', label='r_ref')
     plt.title('Yaw Rate, r')
     plt.xlabel('Time [s]')
     plt.ylabel('r [rad/s]')
@@ -914,11 +918,12 @@ for n_test, test in enumerate(TESTS):
     plt.subplot(4,2,6)
     plt.plot(time, np.rad2deg(errors[:,2]), label='error')
     plt.title('Error Yaw Rate')
+    plt.ylim(0, max(0.1, np.max(np.rad2deg(errors[:,2]))))
     plt.xlabel('Time [s]')
 
     plt.subplot(4,2,7)
-    plt.plot(time_mpc, np.rad2deg(y_ref_nolookahead[:,3]), label='delta_ref')
-    plt.plot(time, np.rad2deg(simX[:, 3]), linestyle='--', label='delta')
+    plt.plot(time, np.rad2deg(simX[:, 3]), label='δ')
+    plt.plot(time_mpc, np.rad2deg(y_ref_nolookahead[:,3]), linestyle='--', label='δ_ref')
     plt.title('Steering angle (at the wheel), δ')
     plt.xlabel('Time [s]')
     plt.ylabel('δ [deg]')
@@ -926,8 +931,8 @@ for n_test, test in enumerate(TESTS):
     plt.legend()
 
     plt.subplot(4,2,8)
-    plt.plot(time_mpc, y_ref_nolookahead[:,4], label='Fx_ref')
-    plt.plot(time, simX[:, 4], linestyle='--', label='Fx')
+    plt.plot(time, simX[:, 4], label='Fx')
+    plt.plot(time_mpc, y_ref_nolookahead[:,4], linestyle='--', label='Fx_ref')
     plt.title('Rear wheel longitudinal force, Fx')
     plt.xlabel('Time [s]')
     plt.ylabel('Fx [N]')
@@ -935,7 +940,7 @@ for n_test, test in enumerate(TESTS):
     plt.legend()
 
 
-    plt.suptitle(f'MPC simulation results: {test.title}', fontsize=16)
+    plt.suptitle(f'{test.title}', fontsize=16)
     plt.tight_layout()
 
     save_title = f"{n_test+1}_{test.title.replace(' ', '_').replace('/', '_').replace('-', '_').replace(',', '_').replace('.', '_').replace('(', '').replace(')', '').replace(':', '').replace('\n', '_')}"
@@ -948,6 +953,8 @@ for n_test, test in enumerate(TESTS):
 
 
     # animation
+    save_fps = 30.0
+    # save_fps = 20.0
     try:
         anim = car_anim(
             xs=simX[:,:3],  # use the state vector as input
@@ -955,10 +962,10 @@ for n_test, test in enumerate(TESTS):
             us=piecewise_constant(simX[:-1,3:5], [ts_sim]*(simX.shape[0]-1), ts_sim)[0],
             ic=np.array([0, 0, π/2]),  # initial conditions (x, y, ψ) 
             dt=ts_sim,  # time step
-            fps=60,  # frames per second
-            speed=.5,  # speed factor for the animation 
+            fps=save_fps,  # frames per second
+            speed=2.0,  # speed factor for the animation 
             # follow=True,  # follow the car in the animation
-            title=f'Animation: {test.title}',  # title of the animation
+            title=test.title,  # title of the animation
             # get_video=True,  # get video instead of jshtml
             static_img=GO_FAST,  # use static image instead of animation
             no_notebook=True,  # do not use notebook mode
@@ -967,8 +974,16 @@ for n_test, test in enumerate(TESTS):
         if GO_FAST:
             plt.savefig(f'generated_figures/{save_title}_anim.png', dpi=300, bbox_inches='tight')
         else:
-            anim.save(f'generated_figures/{save_title}.mp4', fps=60, extra_args=['-vcodec', 'libx264']) # save animation as mp4
-    except Exception as e: print("Failed animation for this test.")
+            anim.save(f'generated_figures/{save_title}.mp4', fps=save_fps, extra_args=['-vcodec', 'libx264']) # save animation as mp4
+            # convert to gif using ffmpeg command
+            os.system(f'ffmpeg -loglevel error -y -i generated_figures/{save_title}.mp4 -vf "fps={save_fps},scale=1920:-1:flags=lanczos" generated_figures/{save_title}.gif')
+            # os.system(f'ffmpeg -loglevel error -y -i generated_figures/{save_title}.mp4 -vf "fps=60,scale=1080:-1:flags=lanczos" generated_figures/{save_title}_60fps.gif')
+        n_test += 1  # increment test number for the next test 
+    
+    except Exception as e: 
+        print(f'Failed test: {test.title} -> {e}. Retrying...')
+
+    plt.close('all')
 # plt.show()
 
 
