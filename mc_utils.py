@@ -81,7 +81,8 @@ MAX_DELTA = 25 * π / 180  # [rad] maximum steering angle in radians
 MAX_V, MIN_V = 10, 0.1 # [m/s] maximum velocity
 # MAX_FX = 0.8 * μr*Fz_Rear # [N] maximum rear longitudinal force
 # MAX_FX, MIN_FX = 30, 0.0 # [N] maximum rear longitudinal force
-MAX_FX, MIN_FX = 0.9 * μr * Fz_Rear, 0.0 # [N] maximum rear longitudinal force
+# MAX_FX, MIN_FX = 0.925 * μr * Fz_Rear, 0.0 # [N] maximum rear longitudinal force
+MAX_FX, MIN_FX = 0.91 * μr * Fz_Rear, 0.0 # [N] maximum rear longitudinal force
 # MAX_FX, MIN_FX = μr * Fz_Rear - 5, 0.0 # [N] maximum rear longitudinal force
 
 ####################################################################################################

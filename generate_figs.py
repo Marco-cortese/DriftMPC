@@ -381,14 +381,14 @@ class Test():
 
 ## PARAMETERS
 GO_FAST = False # save figs instead of videos to run tests faster
-GO_FAST = True # save figs instead of videos to run tests faster
+# GO_FAST = True # save figs instead of videos to run tests faster
 
 SKIP_ANIM = False # skip animation generation
-SKIP_ANIM = True # skip animation generation
+# SKIP_ANIM = True # skip animation generation
 
 x_eq0 = [4.510306923563673, -0.4363323129985824, 1.503435641187891, -0.13754984841368398, 45.87960340367423]
 
-x0_standstill = [1.0, 0.0, 0.0, 0.0, 0.0] # initial condition for standstill tests
+x0_standstill = [1.5, 0.0, 0.0, 0.0, 0.0] # initial condition for standstill tests
 
 # tracking tests
 tt_tot = 15.0 # total time for tracking tests
@@ -405,9 +405,18 @@ assert ramp.shape == beta_ref0.shape, f'ramp {ramp.shape} must have the same sha
 # sinusoidal V reference
 V_ref0 = (5 + 1.5*np.sin(2*2*π*ttime_vector/tt_tot)).reshape(-1,1) # 4.5 m/s + 0.5 m/s sinusoidal
 
+#solver
+iter_qp = 10
+iter_nlp = 10
+
 TESTS = [
     Test(title='Open loop from Equilibrium, same model',
-        T_tot=3.0, x_eq=x_eq0, x0=x_eq0, open_loop=True),
+        T_tot=3.0, x_eq=x_eq0, x0=x_eq0, open_loop=True,
+        V_ref=([x_eq0[0]], [1]), 
+        beta_ref=([x_eq0[1]], [1]), 
+        r_ref=([x_eq0[2]], [1]), 
+        delta_ref=([x_eq0[3]], [1]), 
+        Fx_ref=([x_eq0[4]], [1])),
     Test(title='Open loop from Equilibrium, model mismatch',
         sim_tire_f=pacejka_ca,
         V_ref=([x_eq0[0]], [1]), 
@@ -526,8 +535,8 @@ TESTS = [
         beta_noise=(0,0.018), # (0, 0.0174533),
         mpc_ws=[1e2, 1e3, 1e2, 0, 0, 1e1, 1e-2],
         T_tot=6.0, x_eq=x_eq0, x0=x0_standstill,
-        qp_solver_iter_max=5,
-        nlp_solver_max_iter=5,
+        qp_solver_iter_max=iter_qp,
+        nlp_solver_max_iter=iter_nlp,
         nlp_solver_type='SQP_RTI'), # 'SQP_RTI' or 'SQP'
     Test(title='Sinusoidal β reference 1, w:[1e2, 1e3, 0, 0, 0, 1e1, 1e-2]\nwith model mismatch and measurement noise, SQP_RTI',
         V_ref=([x_eq0[0]], [1]), 
@@ -544,8 +553,8 @@ TESTS = [
         beta_noise=(0,0.018), # (0, 0.0174533),
         mpc_ws=[1e2, 1e3, 0, 0, 0, 1e1, 1e-2],
         T_tot=tt_tot, x_eq=x_eq0, x0=x0_standstill, Ts=tTs,
-        qp_solver_iter_max=5,
-        nlp_solver_max_iter=5,
+        qp_solver_iter_max=iter_qp,
+        nlp_solver_max_iter=iter_nlp,
         nlp_solver_type='SQP_RTI',
         ),
     Test(title='Sinusoidal β reference 2, w:[1e2, 1e3, 0, 0, 0, 1e1, 1e-2]\nwith model mismatch and measurement noise, SQP_RTI',
@@ -563,8 +572,8 @@ TESTS = [
         beta_noise=(0,0.018), # (0, 0.0174533),
         mpc_ws=[1e2, 1e3, 0, 0, 0, 1e1, 1e-2],
         T_tot=tt_tot, x_eq=x_eq0, x0=x0_standstill, Ts=tTs,
-        qp_solver_iter_max=5,
-        nlp_solver_max_iter=5,
+        qp_solver_iter_max=iter_qp,
+        nlp_solver_max_iter=iter_nlp,
         nlp_solver_type='SQP_RTI',
         ),
     Test(title='V Steps, w:[1e2, 1e3, 0, 0, 0, 1e1, 1e-2]\nwith model mismatch and measurement noise, SQP_RTI',
@@ -582,14 +591,14 @@ TESTS = [
         beta_noise=(0,0.018), # (0, 0.0174533),
         mpc_ws=[1e2, 1e3, 0, 0, 0, 1e1, 1e-2],
         T_tot=15.0, x_eq=x_eq0, x0=x0_standstill,
-        qp_solver_iter_max=5, 
-        nlp_solver_max_iter=5,
+        qp_solver_iter_max=iter_qp, 
+        nlp_solver_max_iter=iter_nlp,
         nlp_solver_type='SQP_RTI',
         ),
     Test(title='β Steps, w:[1e2, 1e3, 0, 0, 0, 1e0, 1e-2]\nwith model mismatch and measurement noise, SQP_RTI',
         V_ref=([6.], [1.]),
-        # beta_ref=([-5*π/180, +10*π/180, -15*π/180, +20*π/180, -25*π/180], [1/5,1/5,1/5,1/5,1/5]),
-        # beta_ref=([-15*π/180, -20*π/180, -25*π/180, -30*π/180], [4/22,5/22,6/22,7/22]),
+        # beta_ref=([-5*π/180, +10*π/180, -15*π/180, +20*π/180, -30*π/180], [1/5,1/5,1/5,1/5,1/5]),
+        # beta_ref=([-15*π/180, -20*π/180, -30*π/180, -30*π/180], [4/22,5/22,6/22,7/22]),
         beta_ref=([-30*π/180, 20*π/180, -15*π/180, 10*π/180], [1/4,1/4,1/4,1/4]),
         r_ref=([0], [1]), 
         delta_ref=([0], [1]), 
@@ -603,8 +612,8 @@ TESTS = [
         beta_noise=(0,0.018), # (0, 0.0174533),
         mpc_ws=[1e2, 1e3, 0, 0, 0, 1e0, 1e-2],
         T_tot=16.0, x_eq=x_eq0, x0=x0_standstill,
-        qp_solver_iter_max=5, 
-        nlp_solver_max_iter=5,
+        qp_solver_iter_max=iter_qp, 
+        nlp_solver_max_iter=iter_nlp,
         nlp_solver_type='SQP_RTI',
         ),
     Test(title='β Ramps, w:[1e2, 1e3, 0, 0, 0, 1e0, 1e-2]\nwith model mismatch and measurement noise, SQP_RTI',
@@ -622,13 +631,13 @@ TESTS = [
         beta_noise=(0,0.018), # (0, 0.0174533),
         mpc_ws=[1e2, 1e3, 0, 0, 0, 1e0, 1e-2],
         T_tot=tt_tot, x_eq=x_eq0, x0=x0_standstill,
-        qp_solver_iter_max=5, 
-        nlp_solver_max_iter=5,
+        qp_solver_iter_max=iter_qp, 
+        nlp_solver_max_iter=iter_nlp,
         nlp_solver_type='SQP_RTI',
         ),
     Test(title='V Ramps, w:[1e2, 1e3, 0, 0, 0, 1e0, 1e-2]\nwith model mismatch and measurement noise, SQP_RTI',
         V_ref=3+7*ramp,
-        beta_ref=([-25*π/180], [1]),
+        beta_ref=([-30*π/180], [1]),
         r_ref=([0], [1]), 
         delta_ref=([0], [1]), 
         Fx_ref=([0], [1]),
@@ -641,8 +650,8 @@ TESTS = [
         beta_noise=(0,0.018), # (0, 0.0174533),
         mpc_ws=[1e2, 1e3, 0, 0, 0, 1e0, 1e-2],
         T_tot=tt_tot, x_eq=x_eq0, x0=x0_standstill,
-        qp_solver_iter_max=5, 
-        nlp_solver_max_iter=5,
+        qp_solver_iter_max=iter_qp, 
+        nlp_solver_max_iter=iter_nlp,
         nlp_solver_type='SQP_RTI',
         ),
     Test(title='Steps β and V, w:[1e2, 1e3, 0, 0, 0, 1e0, 1e-2]\nwith model mismatch and measurement noise, SQP_RTI',
@@ -660,13 +669,13 @@ TESTS = [
         beta_noise=(0,0.018), # (0, 0.0174533),
         mpc_ws=[1e2, 1e3, 0, 0, 0, 1e0, 1e-2],
         T_tot=12.0, x_eq=x_eq0, x0=x0_standstill,
-        qp_solver_iter_max=5,
-        nlp_solver_max_iter=5,
+        qp_solver_iter_max=iter_qp,
+        nlp_solver_max_iter=iter_nlp,
         nlp_solver_type='SQP_RTI',
         ),
     Test(title='Steps β and V, w:[1e2, 1e3, 0, 0, 0, 1e0, 1e-2]\nwith model mismatch and measurement noise, SQP_RTI',
         V_ref=([7, 4, 7], [1/3, 1/3, 1/3]),
-        beta_ref=([-25*π/180, 25*π/180], [1/2, 1/2]),
+        beta_ref=([-30*π/180, 30*π/180], [1/2, 1/2]),
         r_ref=([0], [1]), 
         delta_ref=([0], [1]), 
         Fx_ref=([0], [1]),
@@ -679,13 +688,13 @@ TESTS = [
         beta_noise=(0,0.018), # (0, 0.0174533),
         mpc_ws=[1e2, 1e3, 0, 0, 0, 1e0, 1e-2],
         T_tot=12.0, x_eq=x_eq0, x0=x0_standstill,
-        qp_solver_iter_max=5,
-        nlp_solver_max_iter=5,
+        qp_solver_iter_max=iter_qp,
+        nlp_solver_max_iter=iter_nlp,
         nlp_solver_type='SQP_RTI',
         ),
     Test(title='Steps β and V, w:[1e2, 1e3, 0, 0, 0, 1e1, 1e-2]\nwith model mismatch and measurement noise, SQP_RTI',
         V_ref=([7, 4, 7], [1/3, 1/3, 1/3]),
-        beta_ref=([-25*π/180, 25*π/180, -25*π/180], [1/3, 1/3, 1/3]),
+        beta_ref=([-30*π/180, 30*π/180, -30*π/180], [1/3, 1/3, 1/3]),
         r_ref=([0], [1]), 
         delta_ref=([0], [1]), 
         Fx_ref=([0], [1]),
@@ -698,8 +707,8 @@ TESTS = [
         beta_noise=(0,0.018), # (0, 0.0174533),
         mpc_ws=[1e2, 1e3, 0, 0, 0, 1e1, 1e-2],
         T_tot=12.0, x_eq=x_eq0, x0=x0_standstill,
-        qp_solver_iter_max=5, 
-        nlp_solver_max_iter=5,
+        qp_solver_iter_max=iter_qp, 
+        nlp_solver_max_iter=iter_nlp,
         nlp_solver_type='SQP_RTI',
         ),
 ]
@@ -824,23 +833,23 @@ while n_test < len(TESTS): # repeat tests until they all converge
         # print(f"nx: {nx}, nu: {nu}, ny: {ny}, ny_e: {ny_e}")
     
         # define cost type
-        # ocp.cost.cost_type = 'LINEAR_LS'
-        # ocp.cost.cost_type_e = 'LINEAR_LS'
-        ocp.cost.cost_type = 'NONLINEAR_LS'
-        ocp.cost.cost_type_e = 'NONLINEAR_LS'
+        ocp.cost.cost_type = 'LINEAR_LS'
+        ocp.cost.cost_type_e = 'LINEAR_LS'
+        # ocp.cost.cost_type = 'NONLINEAR_LS'
+        # ocp.cost.cost_type_e = 'NONLINEAR_LS'
         
         # print(f'Q: \n{Q}\nR: \n{R}')
         ocp.cost.W = block_diag(Q, R)
         ocp.cost.W_e = T/N*Q
 
-        # # define matrices characterizing the cost
-        # ocp.cost.Vx = np.vstack((np.eye(nx), np.zeros((nu, nx))))
-        # ocp.cost.Vu = np.vstack((np.zeros((nx, nu)), np.eye(nu)))
-        # ocp.cost.Vx_e = np.eye(nx)
+        # define matrices characterizing the cost
+        ocp.cost.Vx = np.vstack((np.eye(nx), np.zeros((nu, nx))))
+        ocp.cost.Vu = np.vstack((np.zeros((nx, nu)), np.eye(nu)))
+        ocp.cost.Vx_e = np.eye(nx)
         
-        # alternatively, for the NONLINEAR_LS cost type
-        ocp.model.cost_y_expr = ca.vertcat(model.x, model.u)
-        ocp.model.cost_y_expr_e = model.x
+        # # alternatively, for the NONLINEAR_LS cost type
+        # ocp.model.cost_y_expr = ca.vertcat(model.x, model.u)
+        # ocp.model.cost_y_expr_e = model.x
 
         # initialize variables for reference
         ocp.cost.yref = yref[0,:]
@@ -916,11 +925,11 @@ while n_test < len(TESTS): # repeat tests until they all converge
 
     # do some initial iterations to start with a good initial guess
     if not test.open_loop: 
-        for _ in range(5): acados_ocp_solver.solve_for_x0(x0, fail_on_nonzero_status=False, print_stats_on_failure=False)
+        for _ in range(3): acados_ocp_solver.solve_for_x0(x0, fail_on_nonzero_status=False, print_stats_on_failure=False)
 
     # simulation loop
     k = 0 # iteration counter fo control loop
-    for i in tqdm(range(N_steps), desc=f"Test {n_test+1}", ascii=False, ncols=75, colour='yellow'):
+    for i in tqdm(range(N_steps), desc=f"Test {n_test+1}/{len(TESTS)}", ascii=False, ncols=100, colour='yellow'):
 
         # check whether to update the discrete-time part of the loop
         if(i % n_update == 0):
@@ -985,7 +994,8 @@ while n_test < len(TESTS): # repeat tests until they all converge
     fig = plt.figure(figsize=(16, 9))
     plt.subplot(4,2,1)
     plt.plot(time, simX[:, 0], label='V')
-    plt.plot(time_mpc, y_ref_nolookahead[:, 0], linestyle='--', label='V_ref')
+    if np.sum(np.abs(y_ref_nolookahead[:,0])) > 1e-6:
+        plt.plot(time_mpc, y_ref_nolookahead[:, 0], linestyle='--', label='V_ref')
     plt.title('Velocity, V')
     plt.xlabel('Time [s]')
     plt.ylabel('V [m/s]')
@@ -995,12 +1005,13 @@ while n_test < len(TESTS): # repeat tests until they all converge
     plt.subplot(4,2,2)
     plt.plot(time, errors[:,0], label='error')
     plt.title('Error Velocity')
-    plt.ylim(0, max(0.1, np.max(errors[:,0])))
+    plt.ylim(-0.1, 1.1*max(0.1, np.max(errors[:,0])))
     plt.xlabel('Time [s]')
 
     plt.subplot(4,2,3)
     plt.plot(time, np.rad2deg(simX[:, 1]), label='β')
-    plt.plot(time_mpc, np.rad2deg(y_ref_nolookahead[:, 1]), linestyle='--', label='β_ref')
+    if np.sum(np.abs(y_ref_nolookahead[:,1])) > 1e-6:
+        plt.plot(time_mpc, np.rad2deg(y_ref_nolookahead[:, 1]), linestyle='--', label='β_ref')
     plt.title('Sideslip Angle, β')
     plt.xlabel('Time [s]') 
     plt.ylabel('β [deg]')
@@ -1010,12 +1021,13 @@ while n_test < len(TESTS): # repeat tests until they all converge
     plt.subplot(4,2,4)
     plt.plot(time, np.rad2deg(errors[:,1]), label='error')
     plt.title('Error Sideslip Angle')
-    plt.ylim(0, max(0.1, np.max(np.rad2deg(errors[:,1]))))
+    plt.ylim(-0.1, 1.1*max(0.1, np.max(np.rad2deg(errors[:,1]))))
     plt.xlabel('Time [s]')
 
     plt.subplot(4,2,5)
     plt.plot(time, np.rad2deg(simX[:, 2]), label='r')
-    plt.plot(time_mpc, np.rad2deg(y_ref_nolookahead[:, 2]), linestyle='--', label='r_ref')
+    if np.sum(np.abs(y_ref_nolookahead[:,2])) > 1e-6:
+        plt.plot(time_mpc, np.rad2deg(y_ref_nolookahead[:, 2]), linestyle='--', label='r_ref')
     plt.title('Yaw Rate, r')
     plt.xlabel('Time [s]')
     plt.ylabel('r [rad/s]')
@@ -1025,12 +1037,13 @@ while n_test < len(TESTS): # repeat tests until they all converge
     plt.subplot(4,2,6)
     plt.plot(time, np.rad2deg(errors[:,2]), label='error')
     plt.title('Error Yaw Rate')
-    plt.ylim(0, max(0.1, np.max(np.rad2deg(errors[:,2]))))
+    plt.ylim(-0.1, 1.1*max(0.1, np.max(np.rad2deg(errors[:,2]))))
     plt.xlabel('Time [s]')
 
     plt.subplot(4,2,7)
     plt.plot(time, np.rad2deg(simX[:, 3]), label='δ')
-    plt.plot(time_mpc, np.rad2deg(y_ref_nolookahead[:,3]), linestyle='--', label='δ_ref')
+    if np.sum(np.abs(y_ref_nolookahead[:,3])) > 1e-6:
+        plt.plot(time_mpc, np.rad2deg(y_ref_nolookahead[:,3]), linestyle='--', label='δ_ref')
     plt.title('Steering angle (at the wheel), δ')
     plt.xlabel('Time [s]')
     plt.ylabel('δ [deg]')
@@ -1039,7 +1052,8 @@ while n_test < len(TESTS): # repeat tests until they all converge
 
     plt.subplot(4,2,8)
     plt.plot(time, simX[:, 4], label='Fx')
-    plt.plot(time_mpc, y_ref_nolookahead[:,4], linestyle='--', label='Fx_ref')
+    if np.sum(np.abs(y_ref_nolookahead[:,4])) > 1e-6:
+        plt.plot(time_mpc, y_ref_nolookahead[:,4], linestyle='--', label='Fx_ref')
     plt.title('Rear wheel longitudinal force, Fx')
     plt.xlabel('Time [s]')
     plt.ylabel('Fx [N]')
@@ -1056,7 +1070,7 @@ while n_test < len(TESTS): # repeat tests until they all converge
     # plt.show()
 
 
-    print(f"Final state: V={simX[-1,0]:.2f} m/s, Beta={np.rad2deg(simX[-1,1]):.2f} deg, Yaw rate={np.rad2deg(simX[-1,2]):.2f} deg/s, Delta={np.rad2deg(simX[-1,3]):.2f} deg, Fx={simX[-1,4]:.2f} N")
+    # print(f"Final state: V={simX[-1,0]:.2f} m/s, Beta={np.rad2deg(simX[-1,1]):.2f} deg, Yaw rate={np.rad2deg(simX[-1,2]):.2f} deg/s, Delta={np.rad2deg(simX[-1,3]):.2f} deg, Fx={simX[-1,4]:.2f} N")
 
 
 
