@@ -307,7 +307,7 @@ def compute_num_steps(ts_sim, Ts, Tf):
 class Test():
     def __init__(self, 
                     title='Default Test',
-                    Ts=0.01, 
+                    Ts=0.02, 
                     N=100,
                     T_tot=9.0,
                     model_f=STM_model_dt_inputs, 
@@ -325,7 +325,7 @@ class Test():
                     Fx_ub=MAX_FX,
                     x0=[2, 0, 0, 0, 0],
                     u0=[0, 0],
-                    mpc_ws=[1e2, 1e3, 0, 0, 0, 1e0, 1e-2],
+                    mpc_ws=[1e2, 1e3, 0, 0, 0, 5e0, 1e-3],
                     V_ref=([0], [1]),
                     beta_ref=([0], [1]),
                     r_ref=([10], [1]),
@@ -392,7 +392,7 @@ x0_standstill = [1.5, 0.0, 0.0, 0.0, 0.0] # initial condition for standstill tes
 
 # tracking tests
 tt_tot = 15.0 # total time for tracking tests
-tTs = 0.01 # sampling time for tracking tests
+tTs = 0.02 # sampling time for tracking tests
 tzero_ref = piecewise_constant([[0]],[tt_tot], tTs)[0]
 ttime_vector = np.linspace(0, tt_tot, len(tzero_ref))
 
@@ -417,6 +417,13 @@ TESTS = [
         r_ref=([x_eq0[2]], [1]), 
         delta_ref=([x_eq0[3]], [1]), 
         Fx_ref=([x_eq0[4]], [1])),
+    Test(title='Open loop from Equilibrium, 1% IC deviation',
+        V_ref=([x_eq0[0]], [1]), 
+        beta_ref=([x_eq0[1]], [1]), 
+        r_ref=([x_eq0[2]], [1]), 
+        delta_ref=([x_eq0[3]], [1]), 
+        Fx_ref=([x_eq0[4]], [1]),
+        T_tot=3.0, x_eq=x_eq0, x0=[x*0.99 for x in x_eq0], open_loop=True),
     Test(title='Open loop from Equilibrium, model mismatch',
         sim_tire_f=pacejka_ca,
         V_ref=([x_eq0[0]], [1]), 
@@ -425,37 +432,30 @@ TESTS = [
         delta_ref=([x_eq0[3]], [1]), 
         Fx_ref=([x_eq0[4]], [1]),
         T_tot=3.0, x_eq=x_eq0, x0=x_eq0, open_loop=True),
-    Test(title='MPC from Equilibrium, model mismatch, w:[1e2, 1e3, 1e2, 0, 0, 1e1, 1e-2]',
+    Test(title='MPC from Equilibrium, 1% IC deviation, w:[1e2, 1e3, 1e2, 0, 0, 1e1, 1e-3]',
+        V_ref=([x_eq0[0]], [1]), 
+        beta_ref=([x_eq0[1]], [1]), 
+        r_ref=([x_eq0[2]], [1]), 
+        delta_ref=([x_eq0[3]], [1]), 
+        Fx_ref=([x_eq0[4]], [1]),
+        mpc_ws=[1e2, 1e3, 1e2, 0, 0, 1e1, 1e-3],
+        T_tot=3.0, x_eq=x_eq0, x0=[x*0.99 for x in x_eq0]),
+    Test(title='MPC from Equilibrium, model mismatch, w:[1e2, 1e3, 1e2, 0, 0, 1e1, 1e-3]',
         sim_tire_f=pacejka_ca, 
         V_ref=([x_eq0[0]], [1]), 
         beta_ref=([x_eq0[1]], [1]), 
         r_ref=([x_eq0[2]], [1]), 
         delta_ref=([x_eq0[3]], [1]), 
         Fx_ref=([x_eq0[4]], [1]),
-        mpc_ws=[1e2, 1e3, 1e2, 0, 0, 1e1, 1e-2],
+        mpc_ws=[1e2, 1e3, 1e2, 0, 0, 1e1, 1e-3],
         T_tot=3.0, x_eq=x_eq0, x0=x_eq0),
-    Test(title='Open loop from Equilibrium, 1% IC deviation',
+    Test(title='MPC from Equilibrium, 30% IC deviation, w:[1e2, 1e3, 1e2, 0, 0, 1e1, 1e-3]',
         V_ref=([x_eq0[0]], [1]), 
         beta_ref=([x_eq0[1]], [1]), 
         r_ref=([x_eq0[2]], [1]), 
         delta_ref=([x_eq0[3]], [1]), 
         Fx_ref=([x_eq0[4]], [1]),
-        T_tot=3.0, x_eq=x_eq0, x0=[x*0.99 for x in x_eq0], open_loop=True),
-    Test(title='MPC from Equilibrium, 1% IC deviation, w:[1e2, 1e3, 1e2, 0, 0, 1e1, 1e-2]',
-        V_ref=([x_eq0[0]], [1]), 
-        beta_ref=([x_eq0[1]], [1]), 
-        r_ref=([x_eq0[2]], [1]), 
-        delta_ref=([x_eq0[3]], [1]), 
-        Fx_ref=([x_eq0[4]], [1]),
-        mpc_ws=[1e2, 1e3, 1e2, 0, 0, 1e1, 1e-2],
-        T_tot=3.0, x_eq=x_eq0, x0=[x*0.99 for x in x_eq0]),
-    Test(title='MPC from Equilibrium, 30% IC deviation, w:[1e2, 1e3, 1e2, 0, 0, 1e1, 1e-2]',
-        V_ref=([x_eq0[0]], [1]), 
-        beta_ref=([x_eq0[1]], [1]), 
-        r_ref=([x_eq0[2]], [1]), 
-        delta_ref=([x_eq0[3]], [1]), 
-        Fx_ref=([x_eq0[4]], [1]),
-        mpc_ws=[1e2, 1e3, 1e2, 0, 0, 1e1, 1e-2],
+        mpc_ws=[1e2, 1e3, 1e2, 0, 0, 1e1, 1e-3],
         T_tot=6.0, x_eq=x_eq0, x0=[x*1.3 for x in x_eq0]),
     Test(title='MPC from Equilibrium, weight only β, w:[0, 1e3, 0, 0, 0, 1e1, 1e-2]',
         V_ref=([x_eq0[0]], [1]), 
@@ -481,15 +481,15 @@ TESTS = [
         Fx_ref=([x_eq0[4]], [1]),
         mpc_ws=[1e2, 0, 1e2, 0, 0, 1e1, 1e-2],
         T_tot=6.0, x_eq=x_eq0, x0=[x*1.3 for x in x_eq0]),
-    Test(title='MPC from standstill, w:[1e2, 1e3, 1e2, 0, 0, 1e1, 1e-2]',
+    Test(title='MPC from standstill, w:[1e2, 1e3, 1e2, 0, 0, 1e1, 1e-3]',
         V_ref=([x_eq0[0]], [1]), 
         beta_ref=([x_eq0[1]], [1]), 
         r_ref=([x_eq0[2]], [1]), 
         delta_ref=([x_eq0[3]], [1]), 
         Fx_ref=([x_eq0[4]], [1]),
-        mpc_ws=[1e2, 1e3, 1e2, 0, 0, 1e1, 1e-2],
+        mpc_ws=[1e2, 1e3, 1e2, 0, 0, 1e1, 1e-3],
         T_tot=6.0, x_eq=x_eq0, x0=x0_standstill),
-    Test(title='MPC from standstill, w:[1e2, 1e3, 1e2, 0, 0, 1e1, 1e-2]\nwith model mismatch',
+    Test(title='MPC from standstill, w:[1e2, 1e3, 1e2, 0, 0, 1e1, 1e-3]\nwith model mismatch',
         V_ref=([x_eq0[0]], [1]), 
         beta_ref=([x_eq0[1]], [1]), 
         r_ref=([x_eq0[2]], [1]), 
@@ -500,9 +500,9 @@ TESTS = [
         μ_err=-0.05, 
         stiff_k=1.05, 
         J_k=0.9,
-        mpc_ws=[1e2, 1e3, 1e2, 0, 0, 1e1, 1e-2],
+        mpc_ws=[1e2, 1e3, 1e2, 0, 0, 1e1, 1e-3],
         T_tot=6.0, x_eq=x_eq0, x0=x0_standstill),
-    Test(title='MPC from standstill, w:[1e2, 1e3, 1e2, 0, 0, 1e1, 1e-2]\nwith model mismatch and measurement noise',
+    Test(title='MPC from standstill, w:[1e2, 1e3, 1e2, 0, 0, 1e1, 1e-3]\nwith model mismatch and measurement noise',
         V_ref=([x_eq0[0]], [1]), 
         beta_ref=([x_eq0[1]], [1]), 
         r_ref=([x_eq0[2]], [1]), 
@@ -515,12 +515,12 @@ TESTS = [
         J_k=0.9,
         V_noise=(0,0.3), # (0, 0.3), #
         beta_noise=(0,0.018), # (0, 0.0174533),
-        mpc_ws=[1e2, 1e3, 1e2, 0, 0, 1e1, 1e-2],
+        mpc_ws=[1e2, 1e3, 1e2, 0, 0, 1e1, 1e-3],
         T_tot=6.0, x_eq=x_eq0, x0=x0_standstill,
         qp_solver_iter_max=20,
         nlp_solver_type='SQP', # 'SQP_RTI' or 'SQP'
         nlp_solver_max_iter=40),
-    Test(title='MPC from standstill, w:[1e2, 1e3, 1e2, 0, 0, 1e1, 1e-2]\nwith model mismatch and measurement noise, SQP_RTI',
+    Test(title='MPC from standstill, w:[1e2, 1e3, 1e2, 0, 0, 1e1, 1e-3]\nwith model mismatch and measurement noise, SQP_RTI',
         V_ref=([x_eq0[0]], [1]), 
         beta_ref=([x_eq0[1]], [1]), 
         r_ref=([x_eq0[2]], [1]), 
@@ -533,7 +533,26 @@ TESTS = [
         J_k=0.9,
         V_noise=(0,0.3), # (0, 0.3), #
         beta_noise=(0,0.018), # (0, 0.0174533),
-        mpc_ws=[1e2, 1e3, 1e2, 0, 0, 1e1, 1e-2],
+        mpc_ws=[1e2, 1e3, 1e2, 0, 0, 1e1, 1e-3],
+        T_tot=6.0, x_eq=x_eq0, x0=x0_standstill,
+        qp_solver_iter_max=iter_qp,
+        nlp_solver_max_iter=iter_nlp,
+        nlp_solver_type='SQP_RTI'), # 'SQP_RTI' or 'SQP'
+    Test(title='MPC from standstill, N=50, w:[1e2, 1e3, 1e2, 0, 0, 1e1, 1e-3]\nwith model mismatch and measurement noise, SQP_RTI',
+        N=50,
+        V_ref=([x_eq0[0]], [1]), 
+        beta_ref=([x_eq0[1]], [1]), 
+        r_ref=([x_eq0[2]], [1]), 
+        delta_ref=([x_eq0[3]], [1]), 
+        Fx_ref=([x_eq0[4]], [1]),
+        sim_model_f=DTM_model_dt_inputs_sim, 
+        sim_tire_f=pacejka_ca, 
+        μ_err=-0.05, 
+        stiff_k=1.05, 
+        J_k=0.9,
+        V_noise=(0,0.3), # (0, 0.3), #
+        beta_noise=(0,0.018), # (0, 0.0174533),
+        mpc_ws=[1e2, 1e3, 1e2, 0, 0, 1e1, 1e-3],
         T_tot=6.0, x_eq=x_eq0, x0=x0_standstill,
         qp_solver_iter_max=iter_qp,
         nlp_solver_max_iter=iter_nlp,
@@ -551,7 +570,7 @@ TESTS = [
         J_k=0.9,
         V_noise=(0,0.3), # (0, 0.3), #
         beta_noise=(0,0.018), # (0, 0.0174533),
-        mpc_ws=[1e2, 1e3, 0, 0, 0, 1e1, 1e-2],
+        mpc_ws=[1e2, 1e3, 0, 0, 0, 1e0, 1e-3],
         T_tot=tt_tot, x_eq=x_eq0, x0=x0_standstill, Ts=tTs,
         qp_solver_iter_max=iter_qp,
         nlp_solver_max_iter=iter_nlp,
@@ -576,8 +595,9 @@ TESTS = [
         nlp_solver_max_iter=iter_nlp,
         nlp_solver_type='SQP_RTI',
         ),
-    Test(title='V Steps, w:[1e2, 1e3, 0, 0, 0, 1e1, 1e-2]\nwith model mismatch and measurement noise, SQP_RTI',
-        V_ref=([3.5, 8, 3.5, 8, 3.5], [2.002/7, 1/7, 1/7, 1/7, 2/7]),
+    Test(title='V Steps, w:[1e2, 1e3, 0, 0, 0, 5e0, 1e-3]\nwith model mismatch and measurement noise, SQP_RTI',
+        # V_ref=([3.5, 8, 3.5, 8, 3.5], [2.002/7, 1/7, 1/7, 1/7, 2/7]),
+        V_ref=([3.5, 8, 3.5, 8, 3.5], [2.004/7, 1/7, 1/7, 1/7, 2/7]),
         beta_ref=([30*π/180], [1]),
         r_ref=([0], [1]), 
         delta_ref=([0], [1]), 
@@ -589,13 +609,13 @@ TESTS = [
         J_k=0.9,
         V_noise=(0,0.3), # (0, 0.3), #
         beta_noise=(0,0.018), # (0, 0.0174533),
-        mpc_ws=[1e2, 1e3, 0, 0, 0, 1e1, 1e-2],
+        mpc_ws=[1e2, 1e3, 0, 0, 0, 5e0, 1e-3],
         T_tot=15.0, x_eq=x_eq0, x0=x0_standstill,
         qp_solver_iter_max=iter_qp, 
         nlp_solver_max_iter=iter_nlp,
         nlp_solver_type='SQP_RTI',
         ),
-    Test(title='β Steps, w:[1e2, 1e3, 0, 0, 0, 1e0, 1e-2]\nwith model mismatch and measurement noise, SQP_RTI',
+    Test(title='β Steps, w:[1e2, 1e3, 0, 0, 0, 1e0, 1e-3]\nwith model mismatch and measurement noise, SQP_RTI',
         V_ref=([6.], [1.]),
         # beta_ref=([-5*π/180, +10*π/180, -15*π/180, +20*π/180, -30*π/180], [1/5,1/5,1/5,1/5,1/5]),
         # beta_ref=([-15*π/180, -20*π/180, -30*π/180, -30*π/180], [4/22,5/22,6/22,7/22]),
@@ -610,13 +630,13 @@ TESTS = [
         J_k=0.9,
         V_noise=(0,0.3), # (0, 0.3), #
         beta_noise=(0,0.018), # (0, 0.0174533),
-        mpc_ws=[1e2, 1e3, 0, 0, 0, 1e0, 1e-2],
+        mpc_ws=[1e2, 1e3, 0, 0, 0, 1e0, 1e-3],
         T_tot=16.0, x_eq=x_eq0, x0=x0_standstill,
         qp_solver_iter_max=iter_qp, 
         nlp_solver_max_iter=iter_nlp,
         nlp_solver_type='SQP_RTI',
         ),
-    Test(title='β Ramps, w:[1e2, 1e3, 0, 0, 0, 1e0, 1e-2]\nwith model mismatch and measurement noise, SQP_RTI',
+    Test(title='β Ramps, w:[1e2, 1e3, 0, 0, 0, 1e0, 1e-3]\nwith model mismatch and measurement noise, SQP_RTI',
         V_ref=([5], [1]),
         beta_ref=-30*π/180*ramp,
         r_ref=([0], [1]), 
@@ -629,13 +649,13 @@ TESTS = [
         J_k=0.9,
         V_noise=(0,0.3), # (0, 0.3), #
         beta_noise=(0,0.018), # (0, 0.0174533),
-        mpc_ws=[1e2, 1e3, 0, 0, 0, 1e0, 1e-2],
+        mpc_ws=[1e2, 1e3, 0, 0, 0, 5e0, 1e-3],
         T_tot=tt_tot, x_eq=x_eq0, x0=x0_standstill,
         qp_solver_iter_max=iter_qp, 
         nlp_solver_max_iter=iter_nlp,
         nlp_solver_type='SQP_RTI',
         ),
-    Test(title='V Ramps, w:[1e2, 1e3, 0, 0, 0, 1e0, 1e-2]\nwith model mismatch and measurement noise, SQP_RTI',
+    Test(title='V Ramps, w:[1e2, 1e3, 0, 0, 0, 1e0, 1e-3]\nwith model mismatch and measurement noise, SQP_RTI',
         V_ref=3+7*ramp,
         beta_ref=([-30*π/180], [1]),
         r_ref=([0], [1]), 
@@ -648,13 +668,13 @@ TESTS = [
         J_k=0.9,
         V_noise=(0,0.3), # (0, 0.3), #
         beta_noise=(0,0.018), # (0, 0.0174533),
-        mpc_ws=[1e2, 1e3, 0, 0, 0, 1e0, 1e-2],
+        mpc_ws=[1e2, 1e3, 0, 0, 0, 5e0, 1e-3],
         T_tot=tt_tot, x_eq=x_eq0, x0=x0_standstill,
         qp_solver_iter_max=iter_qp, 
         nlp_solver_max_iter=iter_nlp,
         nlp_solver_type='SQP_RTI',
         ),
-    Test(title='Steps β and V, w:[1e2, 1e3, 0, 0, 0, 1e0, 1e-2]\nwith model mismatch and measurement noise, SQP_RTI',
+    Test(title='Steps β and V 1, w:[1e2, 1e3, 0, 0, 0, 1e0, 1e-2]\nwith model mismatch and measurement noise, SQP_RTI',
         V_ref=([4, 7, 4], [1/3, 1/3, 1/3]),
         beta_ref=([-30*π/180, 30*π/180], [1/2, 1/2]),
         r_ref=([0], [1]), 
@@ -673,7 +693,7 @@ TESTS = [
         nlp_solver_max_iter=iter_nlp,
         nlp_solver_type='SQP_RTI',
         ),
-    Test(title='Steps β and V, w:[1e2, 1e3, 0, 0, 0, 1e0, 1e-2]\nwith model mismatch and measurement noise, SQP_RTI',
+    Test(title='Steps β and V 2, w:[1e2, 1e3, 0, 0, 0, 1e0, 1e-3]\nwith model mismatch and measurement noise, SQP_RTI',
         V_ref=([7, 4, 7], [1/3, 1/3, 1/3]),
         beta_ref=([-30*π/180, 30*π/180], [1/2, 1/2]),
         r_ref=([0], [1]), 
@@ -686,14 +706,14 @@ TESTS = [
         J_k=0.9,
         V_noise=(0,0.3), # (0, 0.3), #
         beta_noise=(0,0.018), # (0, 0.0174533),
-        mpc_ws=[1e2, 1e3, 0, 0, 0, 1e0, 1e-2],
+        mpc_ws=[1e2, 1e3, 0, 0, 0, 1e0, 1e-3],
         T_tot=12.0, x_eq=x_eq0, x0=x0_standstill,
         qp_solver_iter_max=iter_qp,
         nlp_solver_max_iter=iter_nlp,
         nlp_solver_type='SQP_RTI',
         ),
-    Test(title='Steps β and V, w:[1e2, 1e3, 0, 0, 0, 1e1, 1e-2]\nwith model mismatch and measurement noise, SQP_RTI',
-        V_ref=([7, 4, 7], [1/3, 1/3, 1/3]),
+    Test(title='Steps β and V 3, w:[1e2, 1e3, 0, 0, 0, 1e1, 1e-2]\nwith model mismatch and measurement noise, SQP_RTI',
+        V_ref=([6, 4, 6], [1/3, 1/3, 1/3]),
         beta_ref=([-30*π/180, 30*π/180, -30*π/180], [1/3, 1/3, 1/3]),
         r_ref=([0], [1]), 
         delta_ref=([0], [1]), 
@@ -833,23 +853,23 @@ while n_test < len(TESTS): # repeat tests until they all converge
         # print(f"nx: {nx}, nu: {nu}, ny: {ny}, ny_e: {ny_e}")
     
         # define cost type
-        ocp.cost.cost_type = 'LINEAR_LS'
-        ocp.cost.cost_type_e = 'LINEAR_LS'
-        # ocp.cost.cost_type = 'NONLINEAR_LS'
-        # ocp.cost.cost_type_e = 'NONLINEAR_LS'
+        # ocp.cost.cost_type = 'LINEAR_LS'
+        # ocp.cost.cost_type_e = 'LINEAR_LS'
+        ocp.cost.cost_type = 'NONLINEAR_LS'
+        ocp.cost.cost_type_e = 'NONLINEAR_LS'
         
         # print(f'Q: \n{Q}\nR: \n{R}')
         ocp.cost.W = block_diag(Q, R)
         ocp.cost.W_e = T/N*Q
 
-        # define matrices characterizing the cost
-        ocp.cost.Vx = np.vstack((np.eye(nx), np.zeros((nu, nx))))
-        ocp.cost.Vu = np.vstack((np.zeros((nx, nu)), np.eye(nu)))
-        ocp.cost.Vx_e = np.eye(nx)
+        # # define matrices characterizing the cost
+        # ocp.cost.Vx = np.vstack((np.eye(nx), np.zeros((nu, nx))))
+        # ocp.cost.Vu = np.vstack((np.zeros((nx, nu)), np.eye(nu)))
+        # ocp.cost.Vx_e = np.eye(nx)
         
-        # # alternatively, for the NONLINEAR_LS cost type
-        # ocp.model.cost_y_expr = ca.vertcat(model.x, model.u)
-        # ocp.model.cost_y_expr_e = model.x
+        # alternatively, for the NONLINEAR_LS cost type
+        ocp.model.cost_y_expr = ca.vertcat(model.x, model.u)
+        ocp.model.cost_y_expr_e = model.x
 
         # initialize variables for reference
         ocp.cost.yref = yref[0,:]
@@ -1109,6 +1129,14 @@ while n_test < len(TESTS): # repeat tests until they all converge
     n_test += 1  # increment test number for the next test 
 
     plt.close('all')
+
+
+    # delete all the .mp4 files in the generated_figures directory
+    print("Cleaning up .mp4 files in generated_figures directory...")
+    for f in os.listdir('generated_figures'):
+        file_path = os.path.join('generated_figures', f)
+        if os.path.isfile(file_path) and f.endswith('.mp4'):
+            os.remove(file_path)
 
 
 
