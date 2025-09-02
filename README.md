@@ -5,6 +5,6 @@ Repo for the Drifting MPC Project
 
 ## Plan
 
-- [v] Find equilibrium drift point. 
+- [ ] Find equilibrium drift point. 
 
 
