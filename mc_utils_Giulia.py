@@ -3,6 +3,7 @@
 
 # imports
 import numpy as np
+import scipy.io as sio
 # useful functions from numpy (code more readable for matlab users)
 π = 3.14159265358979323846264338327950288419716939937510582
 np.random.seed(42)
@@ -34,68 +35,37 @@ os.environ["ACADOS_SOURCE_DIR"] = f"{home_dir}/repos/acados"
 print(f"ACADOS_SOURCE_DIR: {os.environ['ACADOS_SOURCE_DIR']}") # print the ACADOS source directory
 
 ################################################################################
-# from Fufy.mat
-l = 0.56 # [m] wheelbase
-# t = 0.49 # [m] car width
-t = 0.41 # [m] car width
-R_f, R_r = 0.095, 0.095 # [m] front and rear wheel radius
-g = 9.81 # [m/s^2] gravity acceleration
-steering_ratio_f = 0.6 # [-] steering ratio front
-
-################################################################################
-m        = 9.4+9.4 # [kg] massa veicolo con mini PC e tutto il resto
-b        = l/2 # rear axle distance to CoG
-a        = l-b # front axle distance to CoG
-J_CoG    = 9.4*a**2+9.4*b**2 # Inertia axis z[kg*m^2]
-J_CoG_real = J_CoG*0.9
-Fz_Front_ST = 9.4*g # [N]
-Fz_Rear_ST  = 9.4*g # [N]
-Fz_Tot   = Fz_Rear_ST + Fz_Front_ST # [N] 
-# Second test: height of CoG
-H = 160/1000 # [m] 
-h = (Fz_Rear_ST*l/(Fz_Tot)-(l-b))/np.tan(np.asin(H/l))+(R_r+R_f)/2 # [m] new CoG height
-Fz_Front_nominal = Fz_Front_ST # for simulink 
-Fz_Rear_nominal = Fz_Rear_ST # for simulink
+# vehicle parameters
+g = 9.81 # m/s^2 (gravity)
+a = 1.315 # m (front axle distance from COG)
+b = 1.505 # m (rear axle distance from COG)
+w = a+b # m (wheelbase)
+h = 0.592 # m (COG height from ground)
 tf = 1.557/2 # m (front half track)
 tr = 1.625/2 # m (rear half track)
+t = (tr+tf)/2 # m (average track)
 k_roll_f = 126254.887920000 # front roll stiffness Nm/rad
 k_roll_r = 68944.0781250000 # rear roll stiffness Nm/rad
 d = 0.0619840425531915 # roll center height
 df = 0.041000000000000 # front roll center height
 dr = 0.086000000000000 # rear roll center height
 k_roll_tot = k_roll_f + k_roll_r
-
-#_____ Tires 
-R_fl                = R_f # [m] front left wheel radius
-R_fr                = R_f # [m] front right wheel radius
-R_rl                = R_r # [m] rear left wheel radius
-R_rr                = R_r # [m] rear right wheel radius
-
-#_____ starting position _ 
-x0                   = 0 # [m] distance CoG to y-axis (X0)
-y0                   = 0 # [m] distance CoG to x-axis (Y0)
-gamma                = π/2 #[rad] starting angle respect to x-axis (gamma0)
-
-
-#___ Kinematic Condition
-Toe_fl              = -0*π/180
-Toe_fr              = -Toe_fl
-Toe_rl              = 0*π/180
-Toe_rr              = -Toe_rl 
-
-t_front             = t # [m] track width front
-t_rear              = t # [m] track width rear
-
-μf, μr = 0.8, 0.8   # [] friction coefficients front and rear
-Cyf = 370.36;  # [N/rad] Cornering stiffness front tyre
-Cyr = 1134.05; # [N/rad] Cornering stiffness rear tyre
+SR = 1/12.3 # steering ratio
+m = 1.740132e+03 # kg (vehicle total mass)
+Iz = 2129.335721 # kgm^2
+Fz_Front_ST = m*9.81*b/(a+b)
+Fz_Rear_ST = m*9.81*a/(a+b)
+MF_front = sio.loadmat("MF_battipaglia_mergedDTM.mat")['MF_front']
+MF_rear = sio.loadmat("MF_battipaglia_mergedDTM.mat")['MF_rear']
+MF = np.stack([MF_front, MF_rear], 1).reshape([2,5])
 
 # constraints
-MAX_DELTA = 25 * π / 180  # [rad] maximum steering angle in radians
-MAX_V, MIN_V = 10, 0.1 # [m/s] maximum velocity
+MAX_DELTA = SR*(540) * π / 180  # [rad] maximum steering angle in radians
+MAX_V, MIN_V = 100/3.6, 0.1 # [m/s] maximum velocity
 # MAX_FX = 0.8 * μr*Fz_Rear # [N] maximum rear longitudinal force
 # MAX_FX, MIN_FX = 30, 0.0 # [N] maximum rear longitudinal force
-MAX_FX, MIN_FX = 0.9 * μr * Fz_Rear_ST, -0.9 * μr * Fz_Rear_ST # [N] maximum rear longitudinal force
+μr = 1.0 # rear friction coefficient
+MAX_FX, MIN_FX = 1.2 * μr * Fz_Rear_ST, -1.2 * μr * Fz_Rear_ST # [N] maximum rear longitudinal force
 # MAX_FX, MIN_FX = μr * Fz_Rear - 5, 0.0 # [N] maximum rear longitudinal force
 
 ####################################################################################################
@@ -115,63 +85,6 @@ def fiala_np(α, Fx, Fz, μ, Cy):
 # def tire(α, Fx, Fz, μ, Cy): return fiala_tanh_np(α, Fx, Fz, μ, Cy) # choose the tire model (fiala or fiala_tanh)
 def tire(α, Fx, Fz, μ, Cy): return fiala_np(α, Fx, Fz, μ, Cy) # choose the tire model (fiala or fiala_tanh)
 
-# useful functions
-def f_αf(δ, v, β, r): return δ - np.arctan2(v*np.sin(β) + a*r, v*np.cos(β)) # front slip angle function
-def f_αr(δ, v, β, r): return -np.arctan2(v*np.sin(β) - b*r, v*np.cos(β)) # rear slip angle function
-
-# state space model
-def d_vβr(vβr, δ, Fx):  # -> vβr dot
-    v, β, r = vβr # unpack the state vector
-    # assert v >= 0, "Velocity must be non-negative" # ensure velocity is non-negative
-    if v < 0.001: v = 0.001 # avoid division by zero
-    Fyf = tire(f_αf(δ,v,β,r), 0.0, Fz_Front_ST, μf, Cyf) # lateral force front
-    Fyr = tire(f_αr(δ,v,β,r), Fx, Fz_Rear_ST, μr, Cyr) # lateral force rear
-    Fxr = Fx # rear longitudinal force
-    return np.array([ # equations of motion
-        (-Fyf*np.sin(δ-β) + Fxr*np.cos(β) + Fyr*np.sin(β)) / m, # V dot
-        (+Fyf*np.cos(δ-β) - Fxr*np.sin(β) + Fyr*np.cos(β)) / (m*v) - r, # β dot
-        (a*Fyf*np.cos(δ) - b*Fyr) / J_CoG # r dot
-    ])
-
-def stm_rk4(vβr, δ, Fx, dt=1e-3): # runge-kutta 4th order method
-    k1 = d_vβr(vβr, δ, Fx) * dt
-    k2 = d_vβr(vβr + k1/2, δ, Fx) * dt
-    k3 = d_vβr(vβr + k2/2, δ, Fx) * dt
-    k4 = d_vβr(vβr + k3, δ, Fx) * dt
-    return vβr + (k1 + 2*k2 + 2*k3 + k4) / 6 # update the state vector
-
-def sim_stm_fixed_u(vβr0, δ, Fx, sim_t=1, dt=1e-3, verbose=False): # simulate the STM
-    # simulate the STM for sim_t seconds
-    n_steps = int(sim_t/dt) # number of steps in the simulation
-    # initialize the state vector
-    state = np.zeros((n_steps, 3)) 
-    state[0] = vβr0 # initial state in v,β,r format
-    if verbose: print(f"Initial state: {state[0]} [v,β,r], δ={δ:.2f}, Fx={Fx:.2f}") # print the initial state in v,β,r format
-    # run the simulation
-    for i in range(1, n_steps):
-        state[i] = stm_rk4(state[i-1], δ, Fx, dt) # update the state vector  
-    if verbose: print(f"Final state:   {state[-1]} [v,β,r]") # print the final state in v,β,r format
-    return state
-
-def vel2beta(uvr): # -> vβr
-    """Converts velocity components to sideslip angle and speed."""
-    assert uvr.shape[-1] == 3, "Input must be a 3-element array [u, v, r]"
-    uvr_shape = uvr.shape
-    uvr = uvr.reshape(-1, 3)  # flatten the input to 2D if necessary
-    u, v, r = uvr[:, 0], uvr[:, 1], uvr[:, 2]  # unpack velocity components
-    V = np.sqrt(u**2 + v**2)  # speed
-    β = np.arctan2(v, u)  # sideslip angle
-    return np.stack([V, β, r], axis=-1).reshape(uvr_shape)  # reshape back to original shape if necessary
-
-def beta2vel(vβr): # -> uvr
-    """Converts sideslip angle and speed to velocity components."""
-    assert vβr.shape[-1] == 3, "Input must be a 3-element array [V, β, r]"
-    vβr_shape = vβr.shape
-    vβr = vβr.reshape(-1, 3)  # flatten the input to 2D if necessary
-    V, β, r = vβr[:, 0], vβr[:, 1], vβr[:, 2]  # unpack speed, sideslip angle, and yaw rate
-    u = V * np.cos(β)  # longitudinal velocity component
-    v = V * np.sin(β)  # lateral velocity component
-    return np.stack([u, v, r], axis=-1).reshape(vβr_shape)  # reshape back to original shape if necessary
 
 def car_anim(xs, us, dt, ic=(0.0,0.0,0.0), follow=False, fps=60.0, speed=1.0, title='Car Animation', get_video=False, static_img=False):
     from matplotlib.animation import FuncAnimation
@@ -343,9 +256,115 @@ def pacejka(α, Fx, Fz, μ, Cy):
     pB, pC, pD, pE = 4,1.8,Fy_max,-1 # Pacejka parameters
     return pD * sin(pC * atan(pB * α - pE * (pB*α - atan(pB*α))))
 
+def F_mf_Fz_front(coeff, alpha, Fz):
+
+    #Pacejka Magic Formula 5.2 with nominal load contribution
+    B = coeff[0]
+    C = coeff[1]
+    D = (coeff[2]*Fz + coeff[3])*Fz
+    E = coeff[4]
+    F = D*sin(C*atan(B*alpha - E*(B*alpha - atan(B*alpha))))
+    return F
+
+def F_mf_Fz_rear(coeff, alpha, Fz, Fx):
+
+    #Pacejka Magic Formula 5.2 with nominal load contribution
+    B = coeff[0]
+    C = coeff[1]
+    D = (coeff[2]*Fz + coeff[3])*Fz
+    D = if_else(D**2 < Fx**2, 0.001, sqrt(D**2 - Fx**2))  # combined model
+    E = coeff[4]
+    F = D*sin(C*atan(B*alpha - E*(B*alpha - atan(B*alpha))))
+    return F
 #-----------------------------------------------------------------------------------------------------#
 #-----------------------------------------------------------------------------------------------------#
 #--------------------------------------  MODELS    ---------------------------------------------------#
+
+
+def DTM_model_LT_TOT(Ts):
+    # variables
+    v = SX.sym('v') # velocity
+    beta = SX.sym('beta') # sideslip angle
+    r = SX.sym('r') # yaw rate
+    delta = SX.sym('delta') # wheel angle (on the road)
+    Fx = SX.sym('Fx') # rear longitudinal force
+    dFz_x = SX.sym('dFz_x') # longitudinal load transfer
+    dFz_yf = SX.sym('dFz_yf') # lateral load transfer front
+    dFz_yr = SX.sym('dFz_yr') # lateral load transfer rear
+    x = vertcat(v, beta, r, delta, Fx, dFz_x, dFz_yf, dFz_yr) # state vector
+
+    d_delta = SX.sym('d_delta') # derivative of wheel angle (on the road)
+    d_Fx = SX.sym('d_Fx') # derivative of rear longitudinal force
+    u = vertcat(d_delta, d_Fx) # u input vector 
+
+    # State derivatives (x_dot)
+    v_dot = SX.sym('v_dot')
+    beta_dot = SX.sym('beta_dot')
+    r_dot = SX.sym('r_dot')
+    delta_dot = SX.sym('delta_dot')
+    Fx_dot = SX.sym('Fx_dot')
+    dFz_x_dot = SX.sym('dFz_x_dot')
+    dFz_yf_dot = SX.sym('dFz_yf_dot')
+    dFz_yr_dot = SX.sym('dFz_yr_dot')
+    x_dot = vertcat(v_dot, beta_dot, r_dot, delta_dot, Fx_dot, dFz_x_dot, dFz_yf_dot, dFz_yr_dot) # state dot vector
+    
+    # tire model
+    alpha_fl = delta - atan2(v*sin(beta) + a*r, v*cos(beta) - r*t/2)
+    alpha_fr = delta - atan2(v*sin(beta) + a*r, v*cos(beta) + r*t/2)
+    alpha_rl = - atan2(v*sin(beta) - a*r, v*cos(beta) - r*t/2)
+    alpha_rr = - atan2(v*sin(beta) - a*r, v*cos(beta) + r*t/2)
+
+    # choose the tire model
+    # def tire(alpha, Fx, Fz, μ, Cy): return fiala_tanh_ca(alpha, Fx, Fz, μ, Cy) # choose the tire model
+    # def tire(α, Fx, Fz, μ, Cy): return fiala_ca(α, Fx, Fz, μ, Cy) # choose the tire model
+    # def tire(α, Fx, Fz, μ, Cy): return pacejka(α, Fx, Fz, μ, Cy) # choose the tire model
+
+
+    Fz_FL = Fz_Front_ST - dFz_x/2 - dFz_yf/2
+    Fz_FR = Fz_Front_ST - dFz_x/2 + dFz_yf/2
+    Fz_RL = Fz_Rear_ST + dFz_x/2 - dFz_yr/2
+    Fz_RR = Fz_Rear_ST + dFz_x/2 + dFz_yr/2
+
+    # lateral forces
+    nu = 0.5
+    Fxl = nu*Fx
+    Fxr = (1-nu)*Fx
+    Fy_fl = F_mf_Fz_front(MF[0,:], alpha_fl, Fz_FL)
+    Fy_fr = F_mf_Fz_front(MF[0,:], alpha_fr, Fz_FR)
+    Fy_rl = F_mf_Fz_rear(MF[1,:], alpha_rl, Fz_RL, Fxl)
+    Fy_rr = F_mf_Fz_rear(MF[1,:], alpha_rr, Fz_RR, Fxr)
+
+    LT_x = (Fx - (Fy_fl + Fy_fr)*sin(delta))*h/w # longitudinal load transfer
+
+    sum_Fy = Fy_rl + Fy_rr +Fy_fl*cos(delta) + Fy_fr*cos(delta)
+    LT_yf = sum_Fy*((k_roll_f * (h-d)/(k_roll_tot*2*tf) + b*df/(w*2*tf)))
+    LT_yr = sum_Fy*(k_roll_r * (h-d)/(k_roll_tot*2*tr) + a*dr/(w*2*tr))
+
+
+    # symbolic equations of motion
+    dt_v = (-(Fy_fl + Fy_fr)*sin(delta-beta) + Fx*cos(beta) + (Fy_rl + Fy_rr)*sin(beta)) / m # V dot
+    dt_beta = (+(Fy_fl + Fy_fr)*cos(delta-beta) - Fx*sin(beta) + (Fy_rl + Fy_rr)*cos(beta)) / (m*v) - r # β dot
+    dt_r = (a*(Fy_fl + Fy_fr)*cos(delta) - b*(Fy_rl + Fy_rr) + (Fxr - Fxl)*t/2) / Iz # r dot
+
+    dt_delta = d_delta # change in wheel angle (on the road)
+    dt_Fx = d_Fx # change in rear-left longitudinal force
+    dt_dFz_x = (LT_x - dFz_x)/Ts # longitudinal load transfer dynamics
+    dt_dFz_yf = (LT_yf - dFz_yf)/Ts # lateral load transfer front dynamics
+    dt_dFz_yr = (LT_yr - dFz_yr)/Ts # lateral load transfer rear dynamics
+
+    
+    dx = vertcat(dt_v, dt_beta, dt_r, dt_delta, dt_Fx, dt_dFz_x, dt_dFz_yf, dt_dFz_yr) # equations of motion
+
+
+    # create the model
+    model = AcadosModel()
+    model.name='dtm_model'
+    # model.f_impl_expr = ẋ - dx  
+    model.f_expl_expr = dx 
+    model.x = x  # state vector
+    # model.xdot = ẋ  # state dot vector
+    model.u = u  # u input vector
+    return model
 
 
 def STM_model_dt_inputs():
