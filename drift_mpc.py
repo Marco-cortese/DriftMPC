@@ -20,9 +20,6 @@ model = STM_model_dt_inputs_sim()
 
 T_tot = 6 #10.0 # total simulation time [s]
 
-
-# sim_model = DTM_model_dt_inputs_sim()
-
 # Equilibrium point (found in PYTHON) [V, beta, r, delta, Fx]
 # x_eq, u_eq = [3.610849747542315, -0.4363323129985824, 1.2036165825141052], [-0.18825862766328222, 27.47665205296075]
 # x_eq, u_eq = [4.486209860862883, -0.4363323129985824, 1.4954032869542941], [-0.11596738898598893, 46.64426852037662]
@@ -58,7 +55,6 @@ Q = np.diag([w_V, w_beta, w_r, w_delta, w_Fx])
 R = np.diag([w_dt_delta, w_dt_Fx])
 
 # define reference trajectories
-zero_ref, _ = piecewise_constant([[0]],[T_tot], Ts)
 V_ref, Tf    = piecewise_constant([4.5],[T_tot], Ts)
 # V_ref, Tf    = piecewise_constant([5, 3, 5],[T_tot/3, T_tot/3, T_tot/3], Ts)
 # beta_ref, _  = piecewise_constant([np.deg2rad(-30)],[T_tot], Ts)
@@ -69,8 +65,7 @@ r_ref, _     = piecewise_constant([0],[T_tot], Ts)
 # - provide a reference for all variables
 #  x = [V, beta, r, delta, Fx] u = [d_delta, d_Fx]
 # y_ref = np.column_stack((np.zeros((len(angle_ref), 1)), angle_ref.reshape(-1,1), np.zeros((len(angle_ref), nx+nu-2))))
-y_ref_nolookahead = np.column_stack((V_ref, beta_ref, np.tile(zero_ref, nx+nu-2)))
-# y_ref_nolookahead = np.column_stack((V_ref, beta_ref, zero_ref, zero_ref, zero_ref, zero_ref, zero_ref, zero_ref))
+y_ref_nolookahead = np.column_stack((V_ref, beta_ref, np.tile(piecewise_constant([[0]],[T_tot], Ts)[0], nx+nu-2)))
 
 # - add N samples at the end (replicas of the last sample) for reference look-ahead
 y_ref = np.vstack((y_ref_nolookahead, np.repeat(y_ref_nolookahead[-1].reshape(1,-1), N, axis=0)))
@@ -136,7 +131,6 @@ for i in tqdm(range(N_steps), desc="Simulation", ascii=False, ncols=75, colour='
         for j in range(N): acados_ocp_solver.set(j, "yref", y_ref[k + (j if ref_preview else 0), :])
         acados_ocp_solver.set(N, "yref", y_ref[k + (N if ref_preview else 0), 0:-nu])
 
-
         # if performing shifting, explicitly initialize solver
         # (otherwise, it will be automatically intialized with the previous solution)
         if shifting:
@@ -144,7 +138,6 @@ for i in tqdm(range(N_steps), desc="Simulation", ascii=False, ncols=75, colour='
                 acados_ocp_solver.set(stage, "x", x_opt[stage+1, :, k])
                 acados_ocp_solver.set(stage, "u", u_opt[min([stage+1,N-1]), :, k])
             acados_ocp_solver.set(N, "x", x_opt[N, :, k])
-
 
         # update the control 
         meas_state = simX[i,:nx].copy()
@@ -183,8 +176,8 @@ errors = y_ref_plot[:,:3] - simX[:,:3]
 CM = 'jet' #'inferno'
 fig = plt.figure(figsize=(12, 12))
 plt.subplot(5,2,1)
-plt.plot(time_mpc, y_ref_nolookahead[:, 0], label='V_ref')
-plt.plot(time, simX[:, 0], linestyle='--', label='V')
+plt.plot(time, simX[:, 0], label='V')
+plt.plot(time_mpc, y_ref_nolookahead[:, 0], linestyle=':', label='V_ref')
 plt.title('Total Velocity')
 plt.xlabel('Time (s)')
 plt.ylabel('Total Velocity (m/s)')
@@ -193,12 +186,13 @@ plt.legend()
 
 plt.subplot(5,2,2)
 plt.plot(time, errors[:,0], label='error')
+plt.plot(time, np.zeros_like(time), linestyle=':')
 plt.title('Error Velocity')
 plt.xlabel('Time (s)')
 
 plt.subplot(5,2,3)
-plt.plot(time_mpc, np.rad2deg(y_ref_nolookahead[:, 1]), label='beta_ref')
-plt.plot(time, np.rad2deg(simX[:, 1]), linestyle='--', label='beta')
+plt.plot(time, np.rad2deg(simX[:, 1]), label='beta')
+plt.plot(time_mpc, np.rad2deg(y_ref_nolookahead[:, 1]), linestyle=':', label='beta_ref')
 plt.title('Sideslip Angle')
 plt.xlabel('Time (s)')
 plt.ylabel('Sideslip angle (deg)')
@@ -207,12 +201,13 @@ plt.legend()
 
 plt.subplot(5,2,4)
 plt.plot(time, np.rad2deg(errors[:,1]), label='error')
+plt.plot(time, np.zeros_like(time), linestyle=':')
 plt.title('Error Sideslip Angle')
 plt.xlabel('Time (s)')
 
 plt.subplot(5,2,5)
-plt.plot(time_mpc, np.rad2deg(y_ref_nolookahead[:, 2]), label='r_ref')
-plt.plot(time, np.rad2deg(simX[:, 2]), linestyle='--', label='r')
+plt.plot(time, np.rad2deg(simX[:, 2]), label='r')
+plt.plot(time_mpc, np.rad2deg(y_ref_nolookahead[:, 2]), linestyle=':', label='r_ref')
 plt.title('Yaw rate')
 plt.xlabel('Time (s)')
 plt.ylabel('Yaw rate (rad/s)')
@@ -221,11 +216,12 @@ plt.legend()
 
 plt.subplot(5,2,6)
 plt.plot(time, np.rad2deg(errors[:,2]), label='error')
+plt.plot(time, np.zeros_like(time), linestyle=':')
 plt.title('Error Yaw Rate')
 plt.xlabel('Time (s)')
 
 plt.subplot(5,2,7)
-plt.plot(time, np.rad2deg(simX[:, 3]), linestyle='--', label='delta')
+plt.plot(time, np.rad2deg(simX[:, 3]), label='delta')
 plt.title('Steering angle (at the ground)')
 plt.xlabel('Time (s)')
 plt.ylabel('Steering angle (deg)')
@@ -233,7 +229,7 @@ plt.ylim(np.rad2deg(1.1*delta_lb), np.rad2deg(1.1*delta_ub))
 plt.legend()
 
 plt.subplot(5,2,8)
-plt.plot(time, simX[:, 4], linestyle='--', label='Fx')
+plt.plot(time, simX[:, 4], label='Fx')
 plt.title('Rear wheel longitudinal force')
 plt.xlabel('Time (s)')
 plt.ylabel('Longitudinal Force (N)')
@@ -242,7 +238,7 @@ plt.legend()
 
 plt.subplot(5,2,9)
 plt.plot(time, Fz_Front_ST - simX[:, 5], label='Fz front')
-plt.plot(time, Fz_Rear_ST + simX[:, 5], linestyle='--', label='Fz rear')
+plt.plot(time, Fz_Rear_ST + simX[:, 5], label='Fz rear')
 plt.title('Normal Force at the axis')
 plt.xlabel('Time (s)')
 plt.ylabel('Nominal Force (N)')
