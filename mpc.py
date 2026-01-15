@@ -73,29 +73,30 @@ def create_ocp_solver_description(model, N, T, Q, R, lbx, ubx, idxbx) -> AcadosO
     ocp.cost.yref = np.zeros(ny)
     ocp.cost.yref_e = np.zeros(ny_e)
 
-    # # set constraints
+    # initialize constraint on initial condition, default intial state, v must be > 0
+    x0 = np.zeros(nx); x0[0] = 1.0
+    ocp.constraints.x0 = x0
+
+    # set constraints
     ocp.constraints.lbx = lbx
     ocp.constraints.ubx = ubx
     ocp.constraints.idxbx = idxbx
-
-    # initialize constraint on initial condition
-    ocp.constraints.x0 = np.zeros(nx)
 
     # set solver options
     # ocp.solver_options.print_level = 1
     ocp.solver_options.qp_solver = "PARTIAL_CONDENSING_HPIPM"  #FULL_CONDENSING_QPOASES, PARTIAL_CONDENSING_HPIPM
     ocp.solver_options.hessian_approx = "GAUSS_NEWTON"
     ocp.solver_options.integrator_type = "ERK"
-    ocp.solver_options.nlp_solver_type = "SQP_RTI" #SQP, SQP_RTI
+    ocp.solver_options.nlp_solver_type = "SQP" #SQP, SQP_RTI
 
     # to configure partial condensing
     #ocp.solver_options.qp_solver_cond_N = int(N/10)
 
     # some more advanced settings (refer to the documentation to see them all)
     # - maximum number of SQP iterations (default: 100)
-    ocp.solver_options.nlp_solver_max_iter = 50 #50 1 <-
+    ocp.solver_options.nlp_solver_max_iter = 20 #50 <-
     # - maximum number of iterations for the QP solver (default: 50)
-    ocp.solver_options.qp_solver_iter_max = 25 #25 5 <-
+    ocp.solver_options.qp_solver_iter_max = 5 #25 <-
 
     # - configure warm start of the QP solver (0: no, 1: warm start, 2: hot start)
     # (depends on the specific solver)
@@ -103,5 +104,34 @@ def create_ocp_solver_description(model, N, T, Q, R, lbx, ubx, idxbx) -> AcadosO
 
     return ocp
 
+class MPC_Controller():
+    def __init__(self, model, N, T, Q, R, lbx, ubx, idxbx):
+        self.model, self.N, self.T = model, N, T
+        ocp = create_ocp_solver_description(model, N, T, Q, R, lbx, ubx, idxbx) # define ocp
+        self.solv = AcadosOcpSolver(ocp, verbose=False) # define solver
 
-# def create_mpc_controller():
+    def get_ctrl(self, x, y_ref):
+        for j in range(self.N): self.solv.set(j, "yref", y_ref)
+        u = self.solv.solve_for_x0(x, fail_on_nonzero_status=False, print_stats_on_failure=False)
+        return u
+
+    def get_stats(self):
+        x_opt, u_opt = np.zeros((self.N+1, self.model.x.rows())), np.zeros((self.N, self.model.u.rows()))
+        for s in range(self.N+1):
+            x_opt[s, :] = self.solv.get(s, "x")
+            if s < self.N: u_opt[s, :] = self.solv.get(s, "u")
+        cpu_time = self.solv.get_stats("time_tot")
+        cost = self.solv.get_cost()
+        return x_opt, u_opt, cpu_time, cost
+
+# simulation
+class Simulator():
+    def __init__(self, sim_model, ts_sim, integrator_type='ERK'):
+        # setup simulation of system dynamics
+        sim = AcadosSim()
+        sim.model = sim_model
+        sim.solver_options.T = ts_sim
+        sim.solver_options.integrator_type = integrator_type
+        self.acados_integrator = AcadosSimSolver(sim, verbose=False)
+    def step(self, x, u):
+        return self.acados_integrator.simulate(x, u)
