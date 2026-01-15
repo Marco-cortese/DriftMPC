@@ -62,3 +62,4 @@ drift_eq/gainLQR_drift.mat
 inverted_pendulum_notebook/
 
 generated_figures/
+stm_model_ocp.json

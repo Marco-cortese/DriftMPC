@@ -9,6 +9,7 @@ np.random.seed(42)
 def cot(x): return 1/np.tan(x) # cotangent function
 np.set_printoptions(precision=6, formatter={'float': '{:+.6f}'.format}) # for better readability with sign
 from scipy.io import loadmat # importing loadmat to read .mat files
+from scipy.linalg import block_diag # for block diagonal matrices
 from tqdm import tqdm # for progress bar
 import matplotlib.pyplot as plt # for plotting
 # casadi/acados model
@@ -18,6 +19,12 @@ from acados_template import AcadosModel, AcadosOcp, AcadosOcpSolver, AcadosSim, 
 # suppress warnings acados
 import warnings
 warnings.filterwarnings("ignore", category=UserWarning, module='acados_template')
+# delete c_generated_code directory if it exists
+import shutil
+import os
+if os.path.exists('c_generated_code'): shutil.rmtree('c_generated_code')
+
+
 # Set plotting style
 plt.style.use('dark_background')
 plt.rcParams['figure.figsize'] = (10, 6)
@@ -599,7 +606,6 @@ def DTM_model_LT_dt_inputs_sim(Ts):
 
     LT = (Fx - (Fy_fl + Fy_fr)*sin(delta))*h/l # total load transfer
 
-
     # define the symbolic equations of motion
     dt_v = (-(Fy_fl + Fy_fr)*sin(delta-beta) + Fx*cos(beta) + (Fy_rl + Fy_rr)*sin(beta)) / m # V dot
     dt_beta = (+(Fy_fl + Fy_fr)*cos(delta-beta) - Fx*sin(beta) + (Fy_rl + Fy_rr)*cos(beta)) / (m*v) - r # β dot
@@ -610,7 +616,6 @@ def DTM_model_LT_dt_inputs_sim(Ts):
     dt_dFz = (LT - dFz)/Ts
     
     dx = vertcat(dt_v, dt_beta, dt_r, dt_delta, dt_Fx, dt_dFz)
-
 
     # create the model
     model = AcadosModel()
