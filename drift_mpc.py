@@ -1,25 +1,27 @@
 from mpc import *
-from scipy.linalg import block_diag
-
-# define simulation fundamental time step [s]
-ts_sim = 0.001
-# model used to simulate the system
-sim_model = DTM_model_LT_dt_inputs_sim(ts_sim)
-# sim_model = model = DTM_model_dt_inputs_sim()
-
-# setup controller parameters
-Ts = 0.01 # - controller sampling time [s]
-N  = 100 #50 # - number of shooting time intervals 
-T = N*Ts # - prediction horizon length [s]
-T_tot = 6 #10.0 # total simulation time [s]
-
-# - system model
-# model = DTM_model_LT_dt_inputs_sim(Ts)
-model = STM_model_dt_inputs_sim()
 
 # Equilibrium point (found in PYTHON) [V, beta, r, delta, Fx]
 # x_eq, u_eq = [3.610849747542315, -0.4363323129985824, 1.2036165825141052], [-0.18825862766328222, 27.47665205296075]
 # x_eq, u_eq = [4.486209860862883, -0.4363323129985824, 1.4954032869542941], [-0.11596738898598893, 46.64426852037662]
+
+X0 = np.array([2.0, 0.0, 0.0, 0.0, 0.0]) # initial condition for [V, beta, r, delta, Fx]
+
+# - system model
+model = STM_model_dt_inputs(); x0=X0
+# model = DTM_model_dt_inputs(); x0=X0
+# model = DTM_model_LT_dt_inputs(Ts); x0=np.concatenate([X0, [0.0]]);
+
+# - simulation model
+ts_sim = 0.001 # simulation fundamental time step [s]
+# sim_model = STM_model_dt_inputs_sim(); x0_sim=X0
+# sim_model = DTM_model_dt_inputs_sim(); x0_sim=X0
+sim_model = DTM_model_LT_dt_inputs_sim(ts_sim); x0_sim=np.concatenate([X0, [0.0]])
+
+# setup controller parameters
+Ts = 0.01 # - controller sampling time [s]
+N  = 100 #100 # - number of shooting time intervals 
+T = N*Ts # - prediction horizon length [s]
+T_tot = 6 #10.0 # total simulation time [s]
 
 ## Constraints
 LBX = np.array([-MAX_DELTA, MIN_FX]) # lower bounds on states
@@ -30,12 +32,8 @@ IDXBX = np.array([3,4]) # indices of the bounded states
 nx, nu = model.x.rows(), model.u.rows()
 nx_sim, nu_sim = sim_model.x.rows(),  sim_model.u.rows()
 
-# initial condition
-x0 = np.concatenate(([3.0], np.zeros(nx - 1)))
-# x0 = x0 + np.concatenate([[np.random.uniform(-0.5, 0.5)], [np.deg2rad(np.random.uniform(-15, 15))], [np.random.uniform(-1, 1)], np.zeros(nx - 3)])
-
 # define cost weigth matrices
-# w_V, w_beta, w_r, w_delta, w_Fx, w_dt_delta, w_dt_Fx = 1e3, 5e4, 0, 0, 0, 1e1, 1e-2 # <-
+# w_V, w_beta, w_r, w_delta, w_Fx, w_dt_delta, w_dt_Fx = 1e3, 5e4, 0, 0, 0, 1e1, 1e-2 
 w_V, w_beta, w_r, w_delta, w_Fx, w_dt_delta, w_dt_Fx = 1e1, 5e2, 0, 0, 0, 3e-2, 1e-4
 Q = np.diag([w_V, w_beta, w_r, w_delta, w_Fx])
 R = np.diag([w_dt_delta, w_dt_Fx])
@@ -67,7 +65,7 @@ mpc_ctrl = MPC_Controller(model, N, T, Q, R,
 simX = np.zeros((N_steps + 1, nx_sim))
 simU = np.zeros((N_steps_dt, nu_sim))
 # set intial state
-simX[0, :] = np.concatenate([x0, [0]])
+simX[0, :] = x0_sim
 
 # create variables to store, at each iteration, previous optimal solution
 x_opt = np.zeros((N+1, nx, N_steps_dt + 1))
@@ -164,22 +162,22 @@ plt.ylabel('Longitudinal Force (N)')
 plt.ylim(1.1*-MAX_FX, 1.1*MAX_FX)
 plt.legend()
 
-plt.subplot(5,2,9)
-plt.plot(time, Fz_Front_ST - simX[:, 5], label='Fz front')
-plt.plot(time, Fz_Rear_ST + simX[:, 5], label='Fz rear')
-plt.title('Normal Force at the axis')
-plt.xlabel('Time (s)')
-plt.ylabel('Nominal Force (N)')
-# plt.ylim(1.1*-MAX_FX, 1.1*MAX_FX)
-plt.legend()
+# plt.subplot(5,2,9)
+# plt.plot(time, Fz_Front_ST - simX[:, 5], label='Fz front')
+# plt.plot(time, Fz_Rear_ST + simX[:, 5], label='Fz rear')
+# plt.title('Normal Force at the axis')
+# plt.xlabel('Time (s)')
+# plt.ylabel('Nominal Force (N)')
+# # plt.ylim(1.1*-MAX_FX, 1.1*MAX_FX)
+# plt.legend()
 
-plt.subplot(5,2,10)
-plt.plot(time, simX[:, 5]*l/(m*h), label='ax')
-plt.title('Longitudinal acceleration')
-plt.xlabel('Time (s)')
-plt.ylabel('Longitudinal acceleration (m/s^2)')
-# plt.ylim(-1.1*-MAX_FX, 1.1*MAX_FX)
-plt.legend()
+# plt.subplot(5,2,10)
+# plt.plot(time, simX[:, 5]*l/(m*h), label='ax')
+# plt.title('Longitudinal acceleration')
+# plt.xlabel('Time (s)')
+# plt.ylabel('Longitudinal acceleration (m/s^2)')
+# # plt.ylim(-1.1*-MAX_FX, 1.1*MAX_FX)
+# plt.legend()
 
 
 plt.suptitle('MPC simulation results', fontsize=16)

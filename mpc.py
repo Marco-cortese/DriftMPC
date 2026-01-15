@@ -1,4 +1,5 @@
 from mc_utils_LT import *
+from mg_utils import *
 
 # utils
 def clear_previous_simulation():
