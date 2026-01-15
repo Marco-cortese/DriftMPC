@@ -6,22 +6,22 @@ from mpc import *
 
 X0 = np.array([2.0, 0.0, 0.0, 0.0, 0.0]) # initial condition for [V, beta, r, delta, Fx]
 
+# setup controller parameters
+Ts = 0.01 # - controller sampling time [s]
+N  = 100 #100 # - number of shooting time intervals 
+T = N*Ts # - prediction horizon length [s]
+T_tot = 6 #10.0 # total simulation time [s]
+
 # - system model
-model = STM_model_dt_inputs(); x0=X0
-# model = DTM_model_dt_inputs(); x0=X0
-# model = DTM_model_LT_dt_inputs(Ts); x0=np.concatenate([X0, [0.0]]);
+# model = STM_model_dt_inputs(); x0=X0
+model = DTM_model_dt_inputs(); x0=X0
+# model = DTM_model_LT_dt_inputs(Ts); x0=np.concatenate([X0, [0.0]])
 
 # - simulation model
 ts_sim = 0.001 # simulation fundamental time step [s]
 # sim_model = STM_model_dt_inputs_sim(); x0_sim=X0
 # sim_model = DTM_model_dt_inputs_sim(); x0_sim=X0
 sim_model = DTM_model_LT_dt_inputs_sim(ts_sim); x0_sim=np.concatenate([X0, [0.0]])
-
-# setup controller parameters
-Ts = 0.01 # - controller sampling time [s]
-N  = 100 #100 # - number of shooting time intervals 
-T = N*Ts # - prediction horizon length [s]
-T_tot = 6 #10.0 # total simulation time [s]
 
 ## Constraints
 LBX = np.array([-MAX_DELTA, MIN_FX]) # lower bounds on states
