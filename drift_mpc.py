@@ -1,12 +1,16 @@
 from mpc import *
+from numpy.random import uniform as unf
 
 # Equilibrium point (found in PYTHON) [V, beta, r, delta, Fx]
 # x_eq, u_eq = [3.610849747542315, -0.4363323129985824, 1.2036165825141052], [-0.18825862766328222, 27.47665205296075]
 # x_eq, u_eq = [4.486209860862883, -0.4363323129985824, 1.4954032869542941], [-0.11596738898598893, 46.64426852037662]
 
 # initial condition for [V, beta, r, delta, Fx]
-X0 = np.array([5, 0.0, 0.0, 0.0, 0.0]) 
+# X0 = np.array([9, 0.0, 0.0, 0.0, 0.0]) 
+X0 = np.array([3, 0.0, 0.0, 0.0, 0.0]) 
 # X0 = np.array([0.1, 0.0, 0.0, 0.0, 0.0]) 
+# X0 = np.array([unf(3.0, 8.0), unf(-40, 40)*π/180, unf(-100, 100)*π/180, 0, 0])
+print(f"Initial condition: V={X0[0]:.2f} m/s, beta={np.rad2deg(X0[1]):.2f} deg, r={np.rad2deg(X0[2]):.2f} deg/s, delta={np.rad2deg(X0[3]):.2f} deg, Fx={X0[4]:.2f} N")
 
 # setup controller parameters
 Ts = 0.01 # - controller sampling time [s]
@@ -15,34 +19,35 @@ T = N*Ts # - prediction horizon length [s]
 T_tot = 4 #10.0 # total simulation time [s]
 
 # - system model
-# model = STM_model_dt_inputs(); x0=X0
-model = DTM_model_dt_inputs(tire=fiala_ca); x0=X0
+model = STM_model_dt_inputs(); x0=X0
+# model = DTM_model_dt_inputs(); x0=X0
 # model = DTM_model_LT_dt_inputs(Ts); x0=np.concatenate([X0, [0.0]])
 
 # - simulation model
 ts_sim = 0.001 # simulation fundamental time step [s]
+# sim_model = model; x0_sim = x0  # use the same model for simulation
 # sim_model = STM_model_dt_inputs_sim(); x0_sim=X0
-# sim_model = DTM_model_dt_inputs_sim(); x0_sim=X0
-sim_model = DTM_model_LT_dt_inputs_sim(ts_sim); x0_sim=np.concatenate([X0, [0.0]])
+sim_model = DTM_model_dt_inputs_sim(); x0_sim=X0
+# sim_model = DTM_model_LT_dt_inputs_sim(ts_sim); x0_sim=np.concatenate([X0, [0.0]])
 
 ## Constraints
-LBX, UBX, IDXBX = [-MAX_DELTA, MIN_FX], [MAX_DELTA, MAX_FX], [3,4] # lower bounds on states
+print(f"Max sideslip angle set to {np.rad2deg(MAX_BETA):.2f} deg")
+LBX, UBX, IDXBX = [-MAX_BETA, -MAX_DELTA, MIN_FX], [MAX_BETA, MAX_DELTA, MAX_FX], [1,3,4] # lower bounds on states
 # LBU, UBU, IDXBU = [-MAX_D_DELTA, -MAX_D_FX], [MAX_D_DELTA, MAX_D_FX], [0,1] # both input boundeed
 LBU, UBU, IDXBU = [-MAX_D_DELTA], [MAX_D_DELTA], [0] # delta only
 # LBU, UBU, IDXBU = [], [], [] # no bounds on inputs
-
-
-# get state and control dimensions
-nx, nu = model.x.rows(), model.u.rows()
-nx_sim, nu_sim = sim_model.x.rows(),  sim_model.u.rows()
 
 # define cost weigth matrices
 # w_V, w_beta, w_r, w_delta, w_Fx, w_dt_delta, w_dt_Fx = 1e3, 5e4, 0, 0, 0, 1e1, 1e-2 
 # w_V, w_beta, w_r, w_delta, w_Fx, w_dt_delta, w_dt_Fx = 1e1, 5e2, 0, 0, 0, 3e-2, 1e-4 # with no constraints on d/dt delta, d/dt Fx
 # w_V, w_beta, w_r, w_delta, w_Fx, w_dt_delta, w_dt_Fx = 1, 1, 0, 0, 0, 0, 0 
-w_V, w_beta, w_r, w_delta, w_Fx, w_dt_delta, w_dt_Fx = 1, 10, 0, 0, 0, 3e-4, 1e-6 
+w_V, w_beta, w_r, w_delta, w_Fx, w_dt_delta, w_dt_Fx = 1, π, 0, 0, 0, 3e-4, 1e-6 
 Q = np.diag([w_V, w_beta, w_r, w_delta, w_Fx])
 R = np.diag([w_dt_delta, w_dt_Fx])
+
+# get state and control dimensions
+nx, nu = model.x.rows(), model.u.rows()
+nx_sim, nu_sim = sim_model.x.rows(),  sim_model.u.rows()
 
 # define reference trajectories
 V_ref, Tf    = piecewise_constant([4.5],[T_tot], Ts)
@@ -104,81 +109,83 @@ sim_beta_ref = piecewise_constant(beta_ref[:-1], [Ts]*(len(beta_ref)-1), ts_sim)
 sim_r_ref = piecewise_constant(r_ref[:-1], [Ts]*(len(r_ref)-1), ts_sim)[0]
 errors = np.column_stack((sim_V_ref, sim_beta_ref, sim_r_ref)) - simX[:,:3]
 
-# plot the simulation results
-CM = 'jet' #'inferno'
-fig = plt.figure(figsize=(20, 12))
-plt.subplot(5,2,1) # Velocity plots
-plt.plot(time, simX[:, 0], label='V')
-plt.plot(time_mpc, V_ref, linestyle=':', label='V_ref')
-plt.ylim(1.1*-MAX_V, 1.1*MAX_V)
-plt.title('Total Velocity'), plt.xlabel('Time (s)'), plt.ylabel('Total Velocity (m/s)'), plt.legend()
-plt.subplot(5,2,2)
-plt.plot(time, errors[:,0], label='error')
-plt.plot(time, np.zeros_like(time), linestyle=':')
-plt.title('Error Velocity'), plt.xlabel('Time (s)'), plt.ylabel('Error Velocity (m/s)')
+if True:
+# if False:
+    # plot the simulation results
+    CM = 'jet' #'inferno'
+    fig = plt.figure(figsize=(20, 12))
+    plt.subplot(5,2,1) # Velocity plots
+    plt.plot(time, simX[:, 0], label='V')
+    plt.plot(time_mpc, V_ref, linestyle=':', label='V_ref')
+    plt.ylim(1.1*-MAX_V, 1.1*MAX_V)
+    plt.title('Total Velocity'), plt.xlabel('Time (s)'), plt.ylabel('Total Velocity (m/s)'), plt.legend()
+    plt.subplot(5,2,2)
+    plt.plot(time, errors[:,0], label='error')
+    plt.plot(time, np.zeros_like(time), linestyle=':')
+    plt.title('Error Velocity'), plt.xlabel('Time (s)'), plt.ylabel('Error Velocity (m/s)')
 
-plt.subplot(5,2,3) # Sideslip angle plots
-plt.plot(time, np.rad2deg(simX[:, 1]), label='beta')
-plt.plot(time_mpc, np.rad2deg(beta_ref), linestyle=':', label='beta_ref')
-plt.ylim(-60, 60)
-plt.title('Sideslip Angle'), plt.xlabel('Time (s)'), plt.ylabel('Sideslip angle (deg)'), plt.legend()
-plt.subplot(5,2,4)
-plt.plot(time, np.rad2deg(errors[:,1]), label='error')
-plt.plot(time, np.zeros_like(time), linestyle=':')
-plt.title('Error Sideslip Angle'), plt.xlabel('Time (s)'), plt.ylabel('Error Sideslip Angle (deg)')
+    plt.subplot(5,2,3) # Sideslip angle plots
+    plt.plot(time, np.rad2deg(simX[:, 1]), label='beta')
+    plt.plot(time_mpc, np.rad2deg(beta_ref), linestyle=':', label='beta_ref')
+    plt.ylim(-60, 60)
+    plt.title('Sideslip Angle'), plt.xlabel('Time (s)'), plt.ylabel('Sideslip angle (deg)'), plt.legend()
+    plt.subplot(5,2,4)
+    plt.plot(time, np.rad2deg(errors[:,1]), label='error')
+    plt.plot(time, np.zeros_like(time), linestyle=':')
+    plt.title('Error Sideslip Angle'), plt.xlabel('Time (s)'), plt.ylabel('Error Sideslip Angle (deg)')
 
-plt.subplot(5,2,5) # Yaw rate plots
-plt.plot(time, np.rad2deg(simX[:, 2]), label='r')
-plt.plot(time_mpc, np.rad2deg(r_ref), linestyle=':', label='r_ref')
-plt.ylim(np.rad2deg(-4),np.rad2deg(4))
-plt.title('Yaw rate'), plt.xlabel('Time (s)'), plt.ylabel('Yaw rate (rad/s)'), plt.legend()
-plt.subplot(5,2,6)
-plt.plot(time, np.rad2deg(errors[:,2]), label='error')
-plt.plot(time, np.zeros_like(time), linestyle=':')
-plt.title('Error Yaw Rate'), plt.xlabel('Time (s)'), plt.ylabel('Error Yaw Rate (deg)')
+    plt.subplot(5,2,5) # Yaw rate plots
+    plt.plot(time, np.rad2deg(simX[:, 2]), label='r')
+    plt.plot(time_mpc, np.rad2deg(r_ref), linestyle=':', label='r_ref')
+    plt.ylim(np.rad2deg(-4),np.rad2deg(4))
+    plt.title('Yaw rate'), plt.xlabel('Time (s)'), plt.ylabel('Yaw rate (rad/s)'), plt.legend()
+    plt.subplot(5,2,6)
+    plt.plot(time, np.rad2deg(errors[:,2]), label='error')
+    plt.plot(time, np.zeros_like(time), linestyle=':')
+    plt.title('Error Yaw Rate'), plt.xlabel('Time (s)'), plt.ylabel('Error Yaw Rate (deg)')
 
-plt.subplot(5,2,7) # Control inputs plots
-plt.plot(time, np.rad2deg(simX[:, 3]), label='delta')
-plt.ylim(np.rad2deg(1.1*-MAX_DELTA), np.rad2deg(1.1*MAX_DELTA))
-plt.axhline(y=np.rad2deg(MAX_DELTA), color='gray', alpha=0.6), plt.axhline(y=-np.rad2deg(MAX_DELTA), color='gray', alpha=0.6)
-plt.title('Steering angle (at the ground)'), plt.xlabel('Time (s)'), plt.ylabel('Steering angle (deg)'), plt.legend()
-plt.subplot(5,2,8)
-plt.plot(time, simX[:, 4], label='Fx')
-plt.ylim(1.1*-MAX_FX, 1.1*MAX_FX)
-plt.axhline(y=MAX_FX, color='gray', alpha=0.6), plt.axhline(y=-MAX_FX, color='gray', alpha=0.6)
-plt.title('Rear wheel longitudinal force'), plt.xlabel('Time (s)'), plt.ylabel('Longitudinal Force (N)'), plt.legend()
+    plt.subplot(5,2,7) # Control inputs plots
+    plt.plot(time, np.rad2deg(simX[:, 3]), label='delta')
+    plt.ylim(np.rad2deg(1.1*-MAX_DELTA), np.rad2deg(1.1*MAX_DELTA))
+    plt.axhline(y=np.rad2deg(MAX_DELTA), color='gray', alpha=0.6), plt.axhline(y=-np.rad2deg(MAX_DELTA), color='gray', alpha=0.6)
+    plt.title('Steering angle (at the ground)'), plt.xlabel('Time (s)'), plt.ylabel('Steering angle (deg)'), plt.legend()
+    plt.subplot(5,2,8)
+    plt.plot(time, simX[:, 4], label='Fx')
+    plt.ylim(1.1*-MAX_FX, 1.1*MAX_FX)
+    plt.axhline(y=MAX_FX, color='gray', alpha=0.6), plt.axhline(y=-MAX_FX, color='gray', alpha=0.6)
+    plt.title('Rear wheel longitudinal force'), plt.xlabel('Time (s)'), plt.ylabel('Longitudinal Force (N)'), plt.legend()
 
-plt.subplot(5,2,9) # plot costs and CPU time
-plt.plot(time_mpc[:-1], costs, label='cost')
-plt.ylim(0, 1.1*max(costs))
-plt.title('MPC cost'), plt.xlabel('Time (s)'), plt.ylabel('Cost'), plt.legend()
-plt.subplot(5,2,10)
-plt.plot(time_mpc[:-1], 1e3*cpt, label='CPU time')
-plt.ylim(0, 1.1*max(1e3*cpt))
-plt.title('MPC computation time'), plt.xlabel('Time (s)'), plt.ylabel('Computation time (ms)'), plt.legend()
+    plt.subplot(5,2,9) # plot costs and CPU time
+    plt.plot(time_mpc[:-1], costs, label='cost')
+    plt.ylim(0, 1.1*max(costs))
+    plt.title('MPC cost'), plt.xlabel('Time (s)'), plt.ylabel('Cost'), plt.legend()
+    plt.subplot(5,2,10)
+    plt.plot(time_mpc[:-1], 1e3*cpt, label='CPU time')
+    plt.ylim(0, 1.1*max(1e3*cpt))
+    plt.title('MPC computation time'), plt.xlabel('Time (s)'), plt.ylabel('Computation time (ms)'), plt.legend()
 
-# # load transfer plots
-# plt.subplot(5,2,9)
-# plt.plot(time, Fz_Front_ST - simX[:, 5], label='Fz front')
-# plt.plot(time, Fz_Rear_ST + simX[:, 5], label='Fz rear')
-# plt.title('Normal Force at the axis')
-# plt.xlabel('Time (s)')
-# plt.ylabel('Nominal Force (N)')
-# # plt.ylim(1.1*-MAX_FX, 1.1*MAX_FX)
-# plt.legend()
+    # # load transfer plots
+    # plt.subplot(5,2,9)
+    # plt.plot(time, Fz_Front_ST - simX[:, 5], label='Fz front')
+    # plt.plot(time, Fz_Rear_ST + simX[:, 5], label='Fz rear')
+    # plt.title('Normal Force at the axis')
+    # plt.xlabel('Time (s)')
+    # plt.ylabel('Nominal Force (N)')
+    # # plt.ylim(1.1*-MAX_FX, 1.1*MAX_FX)
+    # plt.legend()
 
-# plt.subplot(5,2,10)
-# plt.plot(time, simX[:, 5]*l/(m*h), label='ax')
-# plt.title('Longitudinal acceleration')
-# plt.xlabel('Time (s)')
-# plt.ylabel('Longitudinal acceleration (m/s^2)')
-# # plt.ylim(-1.1*-MAX_FX, 1.1*MAX_FX)
-# plt.legend()
+    # plt.subplot(5,2,10)
+    # plt.plot(time, simX[:, 5]*l/(m*h), label='ax')
+    # plt.title('Longitudinal acceleration')
+    # plt.xlabel('Time (s)')
+    # plt.ylabel('Longitudinal acceleration (m/s^2)')
+    # # plt.ylim(-1.1*-MAX_FX, 1.1*MAX_FX)
+    # plt.legend()
 
 
-plt.suptitle('MPC simulation results', fontsize=16)
-plt.tight_layout()
-plt.show(block=False)
+    plt.suptitle('MPC simulation results', fontsize=16)
+    plt.tight_layout()
+    plt.show(block=False)
 
 
 # animation
@@ -203,3 +210,5 @@ print(f"Beta: {np.rad2deg(simX[-1,1]):.2f} deg")
 print(f"Yaw rate: {np.rad2deg(simX[-1,2]):.2f} deg/s")
 print(f"Delta: {np.rad2deg(simX[-1,3]):.2f} deg")
 print(f"Fx: {simX[-1,4]:.2f} N")
+
+print(f"Initial condition: V={X0[0]:.2f} m/s, beta={np.rad2deg(X0[1]):.2f} deg, r={np.rad2deg(X0[2]):.2f} deg/s, delta={np.rad2deg(X0[3]):.2f} deg, Fx={X0[4]:.2f} N")

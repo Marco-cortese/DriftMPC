@@ -5,7 +5,7 @@
 import numpy as np
 # useful functions from numpy (code more readable for matlab users)
 π = 3.14159265358979323846264338327950288419716939937510582
-np.random.seed(42)
+# np.random.seed(42)
 def cot(x): return 1/np.tan(x) # cotangent function
 np.set_printoptions(precision=6, formatter={'float': '{:+.6f}'.format}) # for better readability with sign
 from scipy.io import loadmat # importing loadmat to read .mat files
@@ -105,6 +105,8 @@ MAX_V, MIN_V = 10, 0.1 # [m/s] maximum velocity
 MAX_FX, MIN_FX = 0.9 * μr * Fz_Rear_ST, -0.9 * μr * Fz_Rear_ST # [N] maximum rear longitudinal force
 # MAX_FX, MIN_FX = μr * Fz_Rear - 5, 0.0 # [N] maximum rear longitudinal force
 
+MAX_BETA = π/2 - 1.1* MAX_DELTA # limit on sideslip angle to avoid spinning (testacoda) (NOTE: there should be a geometrical limit)
+
 MAX_D_DELTA = 1.5*2*π  # [rad/s] maximum steering angle rate in radians
 MAX_D_FX = 600.0  # [N/s] maximum longitudinal force rate
 
@@ -191,6 +193,13 @@ def car_anim(xs, us, dt, ic=(0.0,0.0,0.0), follow=False, fps=60.0, speed=1.0, ti
     from IPython.display import HTML, display
 
     assert xs.shape[-1] == 3, "Input must be a 3-element array [V, β, r]"
+
+    # put all nans and infs to zero
+    if np.any(np.isnan(xs)) or np.any(np.isinf(xs)):
+        print("Warning: NaNs or Infs found in state array, replacing with zeros.")
+        xs = np.nan_to_num(xs, nan=0.0, posinf=0.0, neginf=0.0)
+
+
     vs, βs, rs = xs[:, 0], xs[:, 1], xs[:, 2] # unpack the vβr array
     δs, Fxs = us[:, 0], us[:, 1]  # unpack the control inputs
     drifts = 180/π*np.abs(βs + δs) # "amount of drift" as the sum of sideslip angle and steering angle 

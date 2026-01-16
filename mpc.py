@@ -28,7 +28,10 @@ def compute_num_steps(ts_sim, Ts, Tf):
 
 
 # ### MPC
-def create_ocp_solver_description(model, N, T, Q, R, lbx, ubx, idxbx, lbu, ubu, idxbu) -> AcadosOcp:
+def create_ocp_solver_description(model=STM_model_dt_inputs, N=100, T=1.0, Q=np.diag([1,π,0,0,0,]), R=np.diag([3e-4, 1e-6]), 
+                                  lbx=[-MAX_BETA, -MAX_DELTA, MIN_FX], ubx=[MAX_BETA, MAX_DELTA, MAX_FX], idxbx=[1,3,4], 
+                                  lbu=[-MAX_D_DELTA], ubu=[MAX_D_DELTA], idxbu=[0],
+                                  ) -> AcadosOcp:
     # create ocp object to formulate the OCP
     ocp = AcadosOcp()
 
@@ -90,7 +93,7 @@ def create_ocp_solver_description(model, N, T, Q, R, lbx, ubx, idxbx, lbu, ubu, 
     ocp.solver_options.qp_solver = "PARTIAL_CONDENSING_HPIPM"  #FULL_CONDENSING_QPOASES, PARTIAL_CONDENSING_HPIPM
     ocp.solver_options.hessian_approx = "GAUSS_NEWTON"
     ocp.solver_options.integrator_type = "ERK"
-    ocp.solver_options.nlp_solver_type = "SQP" #SQP, SQP_RTI
+    ocp.solver_options.nlp_solver_type = "SQP_RTI" #SQP, SQP_RTI
 
     # to configure partial condensing
     #ocp.solver_options.qp_solver_cond_N = int(N/10)
