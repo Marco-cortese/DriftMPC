@@ -105,6 +105,12 @@ MAX_V, MIN_V = 10, 0.1 # [m/s] maximum velocity
 MAX_FX, MIN_FX = 0.9 * μr * Fz_Rear_ST, -0.9 * μr * Fz_Rear_ST # [N] maximum rear longitudinal force
 # MAX_FX, MIN_FX = μr * Fz_Rear - 5, 0.0 # [N] maximum rear longitudinal force
 
+MAX_D_DELTA = 1.5*2*π  # [rad/s] maximum steering angle rate in radians
+MAX_D_FX = 600.0  # [N/s] maximum longitudinal force rate
+
+print(f"Car parameters: m={m} kg, J_CoG={J_CoG} kg*m^2, a={a} m, b={b} m, h={h:.3f} m")
+print(f'MAX_DELTA: {np.rad2deg(MAX_DELTA):.2f} deg, MAX_V: {MAX_V} m/s, MIN_V: {MIN_V} m/s, MAX_FX: {MAX_FX} N, MIN_FX: {MIN_FX} N')
+
 ####################################################################################################
 # tire model
 # μf, μr = 0.8, 0.8   # [] friction coefficients front and rear
@@ -180,7 +186,7 @@ def beta2vel(vβr): # -> uvr
     v = V * np.sin(β)  # lateral velocity component
     return np.stack([u, v, r], axis=-1).reshape(vβr_shape)  # reshape back to original shape if necessary
 
-def car_anim(xs, us, dt, ic=(0.0,0.0,0.0), follow=False, fps=60.0, speed=1.0, title='Car Animation', get_video=False, static_img=False):
+def car_anim(xs, us, dt, ic=(0.0,0.0,0.0), follow=False, fps=60.0, speed=1.0, title='Car Animation', get_video=False, static_img=False, in_notebook=True):
     from matplotlib.animation import FuncAnimation
     from IPython.display import HTML, display
 
@@ -323,13 +329,15 @@ def car_anim(xs, us, dt, ic=(0.0,0.0,0.0), follow=False, fps=60.0, speed=1.0, ti
         # Create the animation
         anim = FuncAnimation(fig, update, frames=len(xs), interval=1000/fps, blit=True)
 
-        plt.close(fig)  # Close the figure to avoid displaying it in Jupyter Notebook
+        if in_notebook:
+            plt.close(fig)  # Close the figure to avoid displaying it in Jupyter Notebook
 
-        # anim.save('car_animation.gif', fps=FPS, dpi=50)  # save animation as gif
-        # anim.save('car_animation.mp4', fps=fps, extra_args=['-vcodec', 'libx264']) # save animation as mp4
+            # anim.save('car_animation.gif', fps=FPS, dpi=50)  # save animation as gif
+            # anim.save('car_animation.mp4', fps=fps, extra_args=['-vcodec', 'libx264']) # save animation as mp4
 
-        if get_video: return display(HTML(anim.to_html5_video()))
-        else: return display(HTML(anim.to_jshtml()))
+            if get_video: return display(HTML(anim.to_html5_video()))
+            else: return display(HTML(anim.to_jshtml()))
+        else: return anim
 
 #-----------------------------------------------------------------------------------------------------#
 #-----------------------------------------------------------------------------------------------------#
@@ -368,7 +376,6 @@ def STM_model_dt_inputs(Ts=0.01, tire=fiala_tanh_ca, μ_err=0.0, Cy_err=1.0):
     x = vertcat(v, beta, r, delta, Fx) # state vector
     u = vertcat(d_delta, d_Fx) # u input vector 
 
-    # tire model
     alpha_f = delta - atan2(v*sin(beta) + a*r, v*cos(beta))
     alpha_r = -atan2(v*sin(beta) - b*r, v*cos(beta))
 

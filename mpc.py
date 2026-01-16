@@ -28,7 +28,7 @@ def compute_num_steps(ts_sim, Ts, Tf):
 
 
 # ### MPC
-def create_ocp_solver_description(model, N, T, Q, R, lbx, ubx, idxbx) -> AcadosOcp:
+def create_ocp_solver_description(model, N, T, Q, R, lbx, ubx, idxbx, lbu, ubu, idxbu) -> AcadosOcp:
     # create ocp object to formulate the OCP
     ocp = AcadosOcp()
 
@@ -81,6 +81,9 @@ def create_ocp_solver_description(model, N, T, Q, R, lbx, ubx, idxbx) -> AcadosO
     ocp.constraints.lbx = lbx
     ocp.constraints.ubx = ubx
     ocp.constraints.idxbx = idxbx
+    ocp.constraints.lbu = lbu
+    ocp.constraints.ubu = ubu
+    ocp.constraints.idxbu = idxbu
 
     # set solver options
     # ocp.solver_options.print_level = 1
@@ -105,9 +108,9 @@ def create_ocp_solver_description(model, N, T, Q, R, lbx, ubx, idxbx) -> AcadosO
     return ocp
 
 class MPC_Controller():
-    def __init__(self, model, N, T, Q, R, lbx, ubx, idxbx):
+    def __init__(self, model, N, T, Q, R, lbx, ubx, idxbx, lbu, ubu, idxbu):
         self.model, self.N, self.T = model, N, T
-        ocp = create_ocp_solver_description(model, N, T, Q, R, lbx, ubx, idxbx) # define ocp
+        ocp = create_ocp_solver_description(model, N, T, Q, R, lbx, ubx, idxbx, lbu, ubu, idxbu) # define ocp
         self.solv = AcadosOcpSolver(ocp, verbose=False) # define solver
 
     def get_ctrl(self, x, y_ref):
