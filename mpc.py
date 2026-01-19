@@ -9,9 +9,8 @@ LBU, UBU, IDXBU = [-MAX_D_DELTA], [MAX_D_DELTA], [0] # delta only
 # LBU, UBU, IDXBU = [], [], [] # no bounds on inputs
 
 # define cost weigth matrices
-# w_V, w_beta, w_r, w_delta, w_Fx, w_dt_delta, w_dt_Fx = 1, π, 0, 0, 0, 3e-4, 1e-6 # <- 
-# w_V, w_beta, w_r, w_delta, w_Fx, w_dt_delta, w_dt_Fx = 1, 3, 0, 1e-6, 1e-6, 3e-4, 1e-6 
-w_V, w_beta, w_r, w_delta, w_Fx, w_dt_delta, w_dt_Fx = 1, 5, 0, 1e-1, 1e-5, 1e-1, 1e-5
+# w_V, w_beta, w_r, w_delta, w_Fx, w_dt_delta, w_dt_Fx = 1, 5, 0, 1e-1, 1e-5, 1e-1, 1e-5 # <-
+w_V, w_beta, w_r, w_delta, w_Fx, w_dt_delta, w_dt_Fx = 1, 5, 0, 3e-2, 1e-5, 3e-2, 1e-5 
 Q = np.diag([w_V, w_beta, w_r, w_delta, w_Fx])
 R = np.diag([w_dt_delta, w_dt_Fx])
 

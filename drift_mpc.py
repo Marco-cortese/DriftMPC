@@ -7,9 +7,12 @@ from numpy.random import uniform as unf
 
 # initial condition for [V, beta, r, delta, Fx]
 # X0 = np.array([9, 0.0, 0.0, 0.0, 0.0]) 
-X0 = np.array([3, 0.0, 0.0, 0.0, 0.0]) 
+# X0 = np.array([3, 0.0, 0.0, 0.0, 0.0]) 
 # X0 = np.array([0.1, 0.0, 0.0, 0.0, 0.0]) 
-# X0 = np.array([unf(3.0, 8.0), unf(-40, 40)*π/180, unf(-100, 100)*π/180, 0, 0])
+X0 = np.array([unf(3.0, 8.0), unf(-40, 40)*π/180, unf(-100, 100)*π/180, 0, 0])
+
+X0 = np.array([4.037190, -0.109424, 1.235876, 0.000000, 0.000000])
+
 print(f"Initial condition: V={X0[0]:.2f} m/s, beta={np.rad2deg(X0[1]):.2f} deg, r={np.rad2deg(X0[2]):.2f} deg/s, delta={np.rad2deg(X0[3]):.2f} deg, Fx={X0[4]:.2f} N")
 
 # setup controller parameters
@@ -72,7 +75,7 @@ cpt, costs = np.zeros((N_steps_dt,)), np.zeros((N_steps_dt,))
 
 # simulation loop
 k = 0 # iteration counter fo control loop
-iterator = tqdm(range(N_steps), desc="Simulation", ascii=False, ncols=75, colour='yellow')
+iterator = tqdm(range(N_steps), desc="Simulation", ascii=False, ncols=75, colour='yellow', mininterval=1/60, miniters=1)
 # iterator = range(N_steps)
 for i in iterator:
     if(i % n_update == 0): # check whether to update the discrete-time part of the loop
@@ -198,3 +201,4 @@ print(f"Delta: {np.rad2deg(simX[-1,3]):.2f} deg")
 print(f"Fx: {simX[-1,4]:.2f} N")
 
 print(f"Initial condition: V={X0[0]:.2f} m/s, beta={np.rad2deg(X0[1]):.2f} deg, r={np.rad2deg(X0[2]):.2f} deg/s, delta={np.rad2deg(X0[3]):.2f} deg, Fx={X0[4]:.2f} N")
+print(f'X0 = np.array([{", ".join(f"{x:.6f}" for x in X0)}])')
