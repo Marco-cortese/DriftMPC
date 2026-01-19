@@ -19,31 +19,17 @@ T = N*Ts # - prediction horizon length [s]
 T_tot = 4 #10.0 # total simulation time [s]
 
 # - system model
-model = STM_model_dt_inputs(); x0=X0
-# model = DTM_model_dt_inputs(); x0=X0
+# model = STM_model_dt_inputs(); x0=X0
+model = DTM_model_dt_inputs(); x0=X0
 # model = DTM_model_LT_dt_inputs(Ts); x0=np.concatenate([X0, [0.0]])
 
 # - simulation model
-ts_sim = 0.001 # simulation fundamental time step [s]
-# sim_model = model; x0_sim = x0  # use the same model for simulation
+ts_sim = 0.001 # simulation fundamental time step [s] <-
+# ts_sim = 0.01 # simulation fundamental time step [s]
+sim_model = model; x0_sim = x0  # use the same model for simulation
 # sim_model = STM_model_dt_inputs_sim(); x0_sim=X0
-sim_model = DTM_model_dt_inputs_sim(); x0_sim=X0
+# sim_model = DTM_model_dt_inputs_sim(); x0_sim=X0
 # sim_model = DTM_model_LT_dt_inputs_sim(ts_sim); x0_sim=np.concatenate([X0, [0.0]])
-
-## Constraints
-print(f"Max sideslip angle set to {np.rad2deg(MAX_BETA):.2f} deg")
-LBX, UBX, IDXBX = [-MAX_BETA, -MAX_DELTA, MIN_FX], [MAX_BETA, MAX_DELTA, MAX_FX], [1,3,4] # lower bounds on states
-# LBU, UBU, IDXBU = [-MAX_D_DELTA, -MAX_D_FX], [MAX_D_DELTA, MAX_D_FX], [0,1] # both input boundeed
-LBU, UBU, IDXBU = [-MAX_D_DELTA], [MAX_D_DELTA], [0] # delta only
-# LBU, UBU, IDXBU = [], [], [] # no bounds on inputs
-
-# define cost weigth matrices
-# w_V, w_beta, w_r, w_delta, w_Fx, w_dt_delta, w_dt_Fx = 1e3, 5e4, 0, 0, 0, 1e1, 1e-2 
-# w_V, w_beta, w_r, w_delta, w_Fx, w_dt_delta, w_dt_Fx = 1e1, 5e2, 0, 0, 0, 3e-2, 1e-4 # with no constraints on d/dt delta, d/dt Fx
-# w_V, w_beta, w_r, w_delta, w_Fx, w_dt_delta, w_dt_Fx = 1, 1, 0, 0, 0, 0, 0 
-w_V, w_beta, w_r, w_delta, w_Fx, w_dt_delta, w_dt_Fx = 1, π, 0, 0, 0, 3e-4, 1e-6 
-Q = np.diag([w_V, w_beta, w_r, w_delta, w_Fx])
-R = np.diag([w_dt_delta, w_dt_Fx])
 
 # get state and control dimensions
 nx, nu = model.x.rows(), model.u.rows()
@@ -68,7 +54,7 @@ print(f'N_steps sim: {N_steps}, N_steps controller: {N_steps_dt}, n_update: {n_u
 sim = Simulator(sim_model=sim_model, ts_sim=ts_sim, integrator_type='ERK')
 
 # set up MPC
-mpc_ctrl = MPC_Controller(model, N, T, Q, R, lbx=LBX, ubx=UBX, idxbx=IDXBX, lbu=LBU, ubu=UBU, idxbu=IDXBU)
+mpc_ctrl = MPC_Controller(model, N, T)
 
 # create variables to store state and control trajectories 
 simX = np.zeros((N_steps + 1, nx_sim))
@@ -182,7 +168,6 @@ if True:
     # # plt.ylim(-1.1*-MAX_FX, 1.1*MAX_FX)
     # plt.legend()
 
-
     plt.suptitle('MPC simulation results', fontsize=16)
     plt.tight_layout()
     plt.show(block=False)
@@ -202,6 +187,7 @@ try:
     )  # run the car animation with the STM results
 except Exception as e:
     print(f"Animation could not be created: {e}")
+
 plt.show()
 
 print("Final state:")

@@ -1,37 +1,22 @@
 from mg_utils import *
 
-# utils
-def clear_previous_simulation():
-    vars = globals().copy()
-    for v in globals().copy():
-        if(type(vars[v]) is AcadosSimSolver or type(vars[v]) is AcadosOcpSolver):
-            del globals()[v]
+### MPC PARAMETERS ###
+## Constraints
+print(f"Max sideslip angle set to {np.rad2deg(MAX_BETA):.2f} deg")
+LBX, UBX, IDXBX = [-MAX_BETA, -MAX_DELTA, MIN_FX], [MAX_BETA, MAX_DELTA, MAX_FX], [1,3,4] # lower bounds on states
+# LBU, UBU, IDXBU = [-MAX_D_DELTA, -MAX_D_FX], [MAX_D_DELTA, MAX_D_FX], [0,1] # both input boundeed
+LBU, UBU, IDXBU = [-MAX_D_DELTA], [MAX_D_DELTA], [0] # delta only
+# LBU, UBU, IDXBU = [], [], [] # no bounds on inputs
 
-def piecewise_constant(vals, durs, dt):
-    if type(vals) is list: vals = np.array(vals).reshape(-1, 1)  # ensure vals is a column vector
-    assert vals.shape[0] == len(durs), "vals and durs must have the same length"
-    assert vals.ndim == 2, "vals must be a 2D array"
-    tot_samples = int(round(np.sum(durs) / dt))
-    durs_n = [int(round(d/dt)) for d in durs]
-    pc = np.concatenate([np.full((n,vals.shape[1]), v) for v, n in zip(vals, durs_n)], axis=0)
-    return np.append(pc, vals[-1:], axis=0), tot_samples * dt
-
-def compute_num_steps(ts_sim, Ts, Tf):
-    # check consistency
-    assert abs(Ts/ts_sim - round(Ts/ts_sim)) < 1e-6, f"ts_sim {ts_sim} must be a divisor of Ts {Ts}"
-    assert abs(Tf/ts_sim - round(Tf/ts_sim)) < 1e-6, f"ts_sim {ts_sim} must be a divisor of Tf {Tf}"
-    N_steps    = int(round(Tf/ts_sim)) # compute the number of simulation steps
-    N_steps_dt = int(round(Tf/Ts)) # compute the number of steps for the discrete-time part of the loop
-    n_update   = int(round(Ts/ts_sim)) # number of simulation steps every which to update the discrete-time part of the loop 
-    return (N_steps, N_steps_dt, n_update)
-
-
+# define cost weigth matrices
+# w_V, w_beta, w_r, w_delta, w_Fx, w_dt_delta, w_dt_Fx = 1, π, 0, 0, 0, 3e-4, 1e-6 # <- 
+# w_V, w_beta, w_r, w_delta, w_Fx, w_dt_delta, w_dt_Fx = 1, 3, 0, 1e-6, 1e-6, 3e-4, 1e-6 
+w_V, w_beta, w_r, w_delta, w_Fx, w_dt_delta, w_dt_Fx = 1, 5, 0, 1e-1, 1e-5, 1e-1, 1e-5
+Q = np.diag([w_V, w_beta, w_r, w_delta, w_Fx])
+R = np.diag([w_dt_delta, w_dt_Fx])
 
 # ### MPC
-def create_ocp_solver_description(model=STM_model_dt_inputs, N=100, T=1.0, Q=np.diag([1,π,0,0,0,]), R=np.diag([3e-4, 1e-6]), 
-                                  lbx=[-MAX_BETA, -MAX_DELTA, MIN_FX], ubx=[MAX_BETA, MAX_DELTA, MAX_FX], idxbx=[1,3,4], 
-                                  lbu=[-MAX_D_DELTA], ubu=[MAX_D_DELTA], idxbu=[0],
-                                  ) -> AcadosOcp:
+def create_ocp_solver_description(model, N, T, Q, R, lbx, ubx, idxbx, lbu, ubu, idxbu) -> AcadosOcp:
     # create ocp object to formulate the OCP
     ocp = AcadosOcp()
 
@@ -90,10 +75,10 @@ def create_ocp_solver_description(model=STM_model_dt_inputs, N=100, T=1.0, Q=np.
 
     # set solver options
     # ocp.solver_options.print_level = 1
-    ocp.solver_options.qp_solver = "PARTIAL_CONDENSING_HPIPM"  #FULL_CONDENSING_QPOASES, PARTIAL_CONDENSING_HPIPM
+    ocp.solver_options.qp_solver = "PARTIAL_CONDENSING_HPIPM"  #FULL_CONDENSING_QPOASES, PARTIAL_CONDENSING_HPIPM <-
     ocp.solver_options.hessian_approx = "GAUSS_NEWTON"
     ocp.solver_options.integrator_type = "ERK"
-    ocp.solver_options.nlp_solver_type = "SQP_RTI" #SQP, SQP_RTI
+    ocp.solver_options.nlp_solver_type = "SQP" #SQP, SQP_RTI
 
     # to configure partial condensing
     #ocp.solver_options.qp_solver_cond_N = int(N/10)
@@ -105,19 +90,19 @@ def create_ocp_solver_description(model=STM_model_dt_inputs, N=100, T=1.0, Q=np.
     ocp.solver_options.qp_solver_iter_max = 5 #25 <-
 
     # - configure warm start of the QP solver (0: no, 1: warm start, 2: hot start)
-    # (depends on the specific solver)
     ocp.solver_options.qp_solver_warm_start = 0
 
     return ocp
 
 class MPC_Controller():
-    def __init__(self, model, N, T, Q, R, lbx, ubx, idxbx, lbu, ubu, idxbu):
+    def __init__(self, model=STM_model_dt_inputs, N=100, T=1.0):
         self.model, self.N, self.T = model, N, T
-        ocp = create_ocp_solver_description(model, N, T, Q, R, lbx, ubx, idxbx, lbu, ubu, idxbu) # define ocp
-        self.solv = AcadosOcpSolver(ocp, verbose=False) # define solver
+        self.ocp = create_ocp_solver_description(model, N, T, Q, R, LBX, UBX, IDXBX, LBU, UBU, IDXBU) # define ocp
+        self.solv = AcadosOcpSolver(self.ocp, verbose=False) # define solver
 
     def get_ctrl(self, x, y_ref):
         for j in range(self.N): self.solv.set(j, "yref", y_ref)
+        # print(f'x [{x.shape}]: {x}, y_ref [{y_ref.shape}]: {y_ref}')
         u = self.solv.solve_for_x0(x, fail_on_nonzero_status=False, print_stats_on_failure=False)
         return u
 

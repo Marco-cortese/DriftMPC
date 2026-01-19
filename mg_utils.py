@@ -134,6 +134,31 @@ def tire(α, Fx, Fz, μ, Cy): return fiala_np(α, Fx, Fz, μ, Cy) # choose the t
 def f_αf(δ, v, β, r): return δ - np.arctan2(v*np.sin(β) + a*r, v*np.cos(β)) # front slip angle function
 def f_αr(δ, v, β, r): return -np.arctan2(v*np.sin(β) - b*r, v*np.cos(β)) # rear slip angle function
 
+# utils
+def clear_previous_simulation():
+    vars = globals().copy()
+    for v in globals().copy():
+        if(type(vars[v]) is AcadosSimSolver or type(vars[v]) is AcadosOcpSolver):
+            del globals()[v]
+
+def piecewise_constant(vals, durs, dt):
+    if type(vals) is list: vals = np.array(vals).reshape(-1, 1)  # ensure vals is a column vector
+    assert vals.shape[0] == len(durs), "vals and durs must have the same length"
+    assert vals.ndim == 2, "vals must be a 2D array"
+    tot_samples = int(round(np.sum(durs) / dt))
+    durs_n = [int(round(d/dt)) for d in durs]
+    pc = np.concatenate([np.full((n,vals.shape[1]), v) for v, n in zip(vals, durs_n)], axis=0)
+    return np.append(pc, vals[-1:], axis=0), tot_samples * dt
+
+def compute_num_steps(ts_sim, Ts, Tf):
+    # check consistency
+    assert abs(Ts/ts_sim - round(Ts/ts_sim)) < 1e-6, f"ts_sim {ts_sim} must be a divisor of Ts {Ts}"
+    assert abs(Tf/ts_sim - round(Tf/ts_sim)) < 1e-6, f"ts_sim {ts_sim} must be a divisor of Tf {Tf}"
+    N_steps    = int(round(Tf/ts_sim)) # compute the number of simulation steps
+    N_steps_dt = int(round(Tf/Ts)) # compute the number of steps for the discrete-time part of the loop
+    n_update   = int(round(Ts/ts_sim)) # number of simulation steps every which to update the discrete-time part of the loop 
+    return (N_steps, N_steps_dt, n_update)
+
 # state space model
 def d_vβr(vβr, δ, Fx):  # -> vβr dot
     v, β, r = vβr # unpack the state vector
