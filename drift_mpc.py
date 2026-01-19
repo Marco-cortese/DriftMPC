@@ -9,9 +9,17 @@ from numpy.random import uniform as unf
 # X0 = np.array([9, 0.0, 0.0, 0.0, 0.0]) 
 # X0 = np.array([3, 0.0, 0.0, 0.0, 0.0]) 
 # X0 = np.array([0.1, 0.0, 0.0, 0.0, 0.0]) 
-X0 = np.array([unf(3.0, 8.0), unf(-40, 40)*π/180, unf(-100, 100)*π/180, 0, 0])
 
-X0 = np.array([4.037190, -0.109424, 1.235876, 0.000000, 0.000000])
+# random ic
+v_lims = (2.0, 8.0)  # m/s # ficed limits
+# v_lims = (YREF[0]-1, YREF[0]+1)  # m/s # around ref
+beta_lims = (-40*π/180, 40*π/180)
+r_lims = (-100*π/180, 100*π/180)
+X0 = np.array([unf(*v_lims), unf(*beta_lims), unf(*r_lims), 0, 0])
+
+# hard ic
+# X0 = np.array([4.037190, -0.109424, 1.235876, 0.000000, 0.000000])
+# X0 = np.array([4.289183, -0.393230, -0.469857, 0.000000, 0.000000])
 
 print(f"Initial condition: V={X0[0]:.2f} m/s, beta={np.rad2deg(X0[1]):.2f} deg, r={np.rad2deg(X0[2]):.2f} deg/s, delta={np.rad2deg(X0[3]):.2f} deg, Fx={X0[4]:.2f} N")
 
@@ -19,19 +27,19 @@ print(f"Initial condition: V={X0[0]:.2f} m/s, beta={np.rad2deg(X0[1]):.2f} deg, 
 Ts = 0.01 # - controller sampling time [s]
 N  = 100 #100 # - number of shooting time intervals e
 T = N*Ts # - prediction horizon length [s]
-T_tot = 4 #10.0 # total simulation time [s]
+T_tot = 2.5 #10.0 # total simulation time [s]
 
 # - system model
-# model = STM_model_dt_inputs(); x0=X0
-model = DTM_model_dt_inputs(); x0=X0
+model = STM_model_dt_inputs(); x0=X0
+# model = DTM_model_dt_inputs(); x0=X0
 # model = DTM_model_LT_dt_inputs(Ts); x0=np.concatenate([X0, [0.0]])
 
 # - simulation model
 ts_sim = 0.001 # simulation fundamental time step [s] <-
 # ts_sim = 0.01 # simulation fundamental time step [s]
-sim_model = model; x0_sim = x0  # use the same model for simulation
+# sim_model = model; x0_sim = x0  # use the same model for simulation
 # sim_model = STM_model_dt_inputs_sim(); x0_sim=X0
-# sim_model = DTM_model_dt_inputs_sim(); x0_sim=X0
+sim_model = DTM_model_dt_inputs_sim(); x0_sim=X0
 # sim_model = DTM_model_LT_dt_inputs_sim(ts_sim); x0_sim=np.concatenate([X0, [0.0]])
 
 # get state and control dimensions

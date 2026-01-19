@@ -10,7 +10,8 @@ LBU, UBU, IDXBU = [-MAX_D_DELTA], [MAX_D_DELTA], [0] # delta only
 
 # define cost weigth matrices
 # w_V, w_beta, w_r, w_delta, w_Fx, w_dt_delta, w_dt_Fx = 1, 5, 0, 1e-1, 1e-5, 1e-1, 1e-5 # <-
-w_V, w_beta, w_r, w_delta, w_Fx, w_dt_delta, w_dt_Fx = 1, 5, 0, 3e-2, 1e-5, 3e-2, 1e-5 
+# w_V, w_beta, w_r, w_delta, w_Fx, w_dt_delta, w_dt_Fx = 1, 5, 0, 3e-2, 1e-5, 3e-2, 1e-5 
+w_V, w_beta, w_r, w_delta, w_Fx, w_dt_delta, w_dt_Fx = 1, 5, 0, 3e-3, 1e-6, 3e-2, 1e-5 
 Q = np.diag([w_V, w_beta, w_r, w_delta, w_Fx])
 R = np.diag([w_dt_delta, w_dt_Fx])
 
@@ -94,12 +95,19 @@ def create_ocp_solver_description(model, N, T, Q, R, lbx, ubx, idxbx, lbu, ubu, 
     return ocp
 
 class MPC_Controller():
-    def __init__(self, model=STM_model_dt_inputs, N=100, T=1.0):
+    def __init__(self, model=STM_model_dt_inputs, N=100, T=1.0, hard_cold_start=False):
         self.model, self.N, self.T = model, N, T
-        self.ocp = create_ocp_solver_description(model, N, T, Q, R, LBX, UBX, IDXBX, LBU, UBU, IDXBU) # define ocp
-        self.solv = AcadosOcpSolver(self.ocp, verbose=False) # define solver
+        self.ocp = create_ocp_solver_description(model, N, T, Q, R, LBX, UBX, IDXBX, LBU, UBU, IDXBU)
+        self.solv = AcadosOcpSolver(self.ocp, verbose=False) 
+
+        # Save a clean initial guess to reset the solver at each time step
+        self.hard_cold_start = hard_cold_start
+        if hard_cold_start:
+            self.reset_file = "cold_start_data.json"
+            self.solv.store_iterate(self.reset_file, overwrite=True)
 
     def get_ctrl(self, x, y_ref):
+        if self.hard_cold_start: self.solv.load_iterate(self.reset_file, verbose=False)
         for j in range(self.N): self.solv.set(j, "yref", y_ref)
         # print(f'x [{x.shape}]: {x}, y_ref [{y_ref.shape}]: {y_ref}')
         u = self.solv.solve_for_x0(x, fail_on_nonzero_status=False, print_stats_on_failure=False)

@@ -63,3 +63,4 @@ inverted_pendulum_notebook/
 
 generated_figures/
 stm_model_ocp.json
+cold_start_data.json
