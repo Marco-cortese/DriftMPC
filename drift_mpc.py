@@ -14,12 +14,14 @@ from numpy.random import uniform as unf
 v_lims = (2.0, 8.0)  # m/s # ficed limits
 # v_lims = (YREF[0]-1, YREF[0]+1)  # m/s # around ref
 beta_lims = (-40*π/180, 40*π/180)
-r_lims = (-100*π/180, 100*π/180)
+r_lims = (0, 100*π/180)
 X0 = np.array([unf(*v_lims), unf(*beta_lims), unf(*r_lims), 0, 0])
 
 # hard ic
 # X0 = np.array([4.037190, -0.109424, 1.235876, 0.000000, 0.000000])
 # X0 = np.array([4.289183, -0.393230, -0.469857, 0.000000, 0.000000])
+# X0 = np.array([5.103320, -0.082596, -1.265065, 0.000000, 0.000000])
+# X0 = np.array([2.353808, -0.511731, 0.321936, 0.000000, 0.000000]) # challenging
 
 print(f"Initial condition: V={X0[0]:.2f} m/s, beta={np.rad2deg(X0[1]):.2f} deg, r={np.rad2deg(X0[2]):.2f} deg/s, delta={np.rad2deg(X0[3]):.2f} deg, Fx={X0[4]:.2f} N")
 
@@ -37,9 +39,9 @@ model = STM_model_dt_inputs(); x0=X0
 # - simulation model
 ts_sim = 0.001 # simulation fundamental time step [s] <-
 # ts_sim = 0.01 # simulation fundamental time step [s]
-# sim_model = model; x0_sim = x0  # use the same model for simulation
+sim_model = model; x0_sim = x0  # use the same model for simulation
 # sim_model = STM_model_dt_inputs_sim(); x0_sim=X0
-sim_model = DTM_model_dt_inputs_sim(); x0_sim=X0
+# sim_model = DTM_model_dt_inputs_sim(); x0_sim=X0
 # sim_model = DTM_model_LT_dt_inputs_sim(ts_sim); x0_sim=np.concatenate([X0, [0.0]])
 
 # get state and control dimensions
@@ -50,6 +52,8 @@ nx_sim, nu_sim = sim_model.x.rows(),  sim_model.u.rows()
 V_ref, Tf    = piecewise_constant([4.5],[T_tot], Ts)
 # V_ref, Tf    = piecewise_constant([5, 3, 5],[T_tot/3, T_tot/3, T_tot/3], Ts)
 beta_ref, _  = piecewise_constant([np.deg2rad(-30)],[T_tot], Ts)
+# beta_ref, _  = piecewise_constant([np.deg2rad(-20)],[T_tot], Ts)
+# beta_ref, _  = piecewise_constant([np.deg2rad(-40)],[T_tot], Ts)
 # beta_ref, _  = piecewise_constant([np.deg2rad(-30),np.deg2rad(30) ],[T_tot/2, T_tot/2], Ts)
 # beta_ref, _  = piecewise_constant([np.deg2rad(-30),np.deg2rad(30), np.deg2rad(-30) ],[T_tot/3, T_tot/3, T_tot/3], Ts)
 r_ref, _     = piecewise_constant([0],[T_tot], Ts)
