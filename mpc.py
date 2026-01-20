@@ -16,7 +16,7 @@ Q = np.diag([w_V, w_beta, w_r, w_delta, w_Fx])
 R = np.diag([w_dt_delta, w_dt_Fx])
 
 # ### MPC
-def create_ocp_solver_description(model, N, T, Q, R, lbx, ubx, idxbx, lbu, ubu, idxbu) -> AcadosOcp:
+def create_ocp_solver_description(model, N, T, Q, R, lbx, ubx, idxbx, lbu, ubu, idxbu, verbose=True) -> AcadosOcp:
     # create ocp object to formulate the OCP
     ocp = AcadosOcp()
 
@@ -36,7 +36,7 @@ def create_ocp_solver_description(model, N, T, Q, R, lbx, ubx, idxbx, lbu, ubu, 
     ny = nx + nu 
     ny_e = nx
 
-    print(f"nx: {nx}, nu: {nu}, ny: {ny}, ny_e: {ny_e}")
+    if verbose: print(f"nx: {nx}, nu: {nu}, ny: {ny}, ny_e: {ny_e}")
 
     # define cost type
     # ocp.cost.cost_type = 'LINEAR_LS'
@@ -44,9 +44,10 @@ def create_ocp_solver_description(model, N, T, Q, R, lbx, ubx, idxbx, lbu, ubu, 
     ocp.cost.cost_type = 'NONLINEAR_LS'
     ocp.cost.cost_type_e = 'NONLINEAR_LS'
 
-    print(f'Q: \n{Q}\nR: \n{R}')
+    if verbose: print(f'Q: \n{Q}\nR: \n{R}')
     ocp.cost.W = block_diag(Q, R)
-    ocp.cost.W_e = T/N*Q
+    ocp.cost.W_e = T/N*Q # <-
+    # ocp.cost.W_e = np.zeros_like(T/N*Q) 
 
     # # define matrices characterizing the cost
     # ocp.cost.Vx = np.vstack((np.eye(nx), np.zeros((nu, nx))))
@@ -81,13 +82,13 @@ def create_ocp_solver_description(model, N, T, Q, R, lbx, ubx, idxbx, lbu, ubu, 
     ocp.solver_options.nlp_solver_type = "SQP" #SQP, SQP_RTI
 
     # to configure partial condensing
-    #ocp.solver_options.qp_solver_cond_N = int(N/10)
+    ocp.solver_options.qp_solver_cond_N = int(N/5)
 
     # some more advanced settings (refer to the documentation to see them all)
     # - maximum number of SQP iterations (default: 100)
-    ocp.solver_options.nlp_solver_max_iter = 20 #50 <-
+    ocp.solver_options.nlp_solver_max_iter = 20 #20 #50 <-
     # - maximum number of iterations for the QP solver (default: 50)
-    ocp.solver_options.qp_solver_iter_max = 5 #25 <-
+    ocp.solver_options.qp_solver_iter_max = 5 #5 #25 <-
 
     # - configure warm start of the QP solver (0: no, 1: warm start, 2: hot start)
     ocp.solver_options.qp_solver_warm_start = 0
@@ -95,19 +96,17 @@ def create_ocp_solver_description(model, N, T, Q, R, lbx, ubx, idxbx, lbu, ubu, 
     return ocp
 
 class MPC_Controller():
-    def __init__(self, model=STM_model_dt_inputs, N=100, T=1.0, hard_cold_start=False):
+    def __init__(self, model=STM_model_dt_inputs, N=100, T=1.0, verbose=True):
         self.model, self.N, self.T = model, N, T
-        self.ocp = create_ocp_solver_description(model, N, T, Q, R, LBX, UBX, IDXBX, LBU, UBU, IDXBU)
+        self.ocp = create_ocp_solver_description(model, N, T, Q, R, LBX, UBX, IDXBX, LBU, UBU, IDXBU, verbose=verbose)
         self.solv = AcadosOcpSolver(self.ocp, verbose=False) 
 
-        # Save a clean initial guess to reset the solver at each time step
-        self.hard_cold_start = hard_cold_start
-        if hard_cold_start:
-            self.reset_file = "cold_start_data.json"
-            self.solv.store_iterate(self.reset_file, overwrite=True)
+        # Save a clean initial guess to be able to reset the solver
+        self.reset_file = "cold_start_data.json"
+        self.solv.store_iterate(self.reset_file, overwrite=True)
 
-    def get_ctrl(self, x, y_ref):
-        if self.hard_cold_start: self.solv.load_iterate(self.reset_file, verbose=False)
+    def get_ctrl(self, x, y_ref, cold=False):
+        if cold: self.reset()
         for j in range(self.N): self.solv.set(j, "yref", y_ref)
         # print(f'x [{x.shape}]: {x}, y_ref [{y_ref.shape}]: {y_ref}')
         u = self.solv.solve_for_x0(x, fail_on_nonzero_status=False, print_stats_on_failure=False)
@@ -121,6 +120,12 @@ class MPC_Controller():
         cpu_time = self.solv.get_stats("time_tot")
         cost = self.solv.get_cost()
         return x_opt, u_opt, cpu_time, cost
+    
+    def reset(self):
+        self.solv.reset(reset_qp_solver_mem=1)
+        self.solv.load_iterate(self.reset_file, verbose=False)
+
+
 
 # simulation
 class Simulator():

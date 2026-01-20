@@ -9,6 +9,7 @@ from numpy.random import uniform as unf
 # X0 = np.array([9, 0.0, 0.0, 0.0, 0.0]) 
 # X0 = np.array([3, 0.0, 0.0, 0.0, 0.0]) 
 # X0 = np.array([0.1, 0.0, 0.0, 0.0, 0.0]) 
+X0 = np.array([5.672574, 0.163271, 0.988291, 0.000000, 0.000000])
 
 # random ic
 v_lims = (2.0, 8.0)  # m/s # ficed limits
