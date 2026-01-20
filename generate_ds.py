@@ -2,7 +2,7 @@ from mpc import *
 from numpy.random import uniform as unf
 np.random.seed(0)  # for reproducibility
 
-N_SIMULATIONS = 15  # number of simulations with different random initial conditions
+N_SIMULATIONS = 1  # number of simulations with different random initial conditions
 ZERO_MPC_COST_THRESHOLD = 0.2  # threshold to consider cost as zero 
 
 # random ic
@@ -50,10 +50,9 @@ for sample_idx in range(N_SIMULATIONS):  # run multiple simulations with differe
 
 
 
-    # # set up MPC
-    # mpc_ctrl = MPC_Controller(model, N, T, verbose=False)
-    # reset controller
-    mpc_ctrl.reset()
+    # set up MPC
+    mpc_ctrl = MPC_Controller(model, N, T, verbose=False)
+    # mpc_ctrl.reset() # reset controller
 
     # get state and control dimensions
     nx, nu = model.x.rows(), model.u.rows()

@@ -24,10 +24,8 @@ def create_ocp_solver_description(model, N, T, Q, R, lbx, ubx, idxbx, lbu, ubu, 
     ocp.model = model
 
     # set prediction horizon:
-    # tf - prediction horizon length [s]
-    # N  - number of intervals in which the prediction horizon is divided 
-    ocp.solver_options.tf = T
-    ocp.solver_options.N_horizon = N
+    ocp.solver_options.tf = T # prediction horizon length [s]
+    ocp.solver_options.N_horizon = N # number of intervals in which the prediction horizon is divided
 
     # get state, control and cost dimensions
     nx = model.x.rows()
@@ -37,26 +35,29 @@ def create_ocp_solver_description(model, N, T, Q, R, lbx, ubx, idxbx, lbu, ubu, 
     ny_e = nx
 
     if verbose: print(f"nx: {nx}, nu: {nu}, ny: {ny}, ny_e: {ny_e}")
-
-    # define cost type
-    # ocp.cost.cost_type = 'LINEAR_LS'
-    # ocp.cost.cost_type_e = 'LINEAR_LS'
-    ocp.cost.cost_type = 'NONLINEAR_LS'
-    ocp.cost.cost_type_e = 'NONLINEAR_LS'
-
     if verbose: print(f'Q: \n{Q}\nR: \n{R}')
+
     ocp.cost.W = block_diag(Q, R)
     ocp.cost.W_e = T/N*Q # <-
+    # ocp.cost.W_e = Q
     # ocp.cost.W_e = np.zeros_like(T/N*Q) 
 
-    # # define matrices characterizing the cost
-    # ocp.cost.Vx = np.vstack((np.eye(nx), np.zeros((nu, nx))))
-    # ocp.cost.Vu = np.vstack((np.zeros((nx, nu)), np.eye(nu)))
-    # ocp.cost.Vx_e = np.eye(nx)
+    # # Add a small regularization term to the Hessian
+    # ocp.solver_options.levenberg_marquardt = 1e-4 
 
-    # alternatively, for the NONLINEAR_LS cost type
-    ocp.model.cost_y_expr = ca.vertcat(model.x, model.u)
-    ocp.model.cost_y_expr_e = model.x
+    # define cost type
+    # define matrices characterizing the cost for LINEAR_LS cost type
+    ocp.cost.cost_type = 'LINEAR_LS'
+    ocp.cost.cost_type_e = 'LINEAR_LS'
+    ocp.cost.Vx = np.vstack((np.eye(nx), np.zeros((nu, nx))))
+    ocp.cost.Vu = np.vstack((np.zeros((nx, nu)), np.eye(nu)))
+    ocp.cost.Vx_e = np.eye(nx)
+
+    # # alternatively, for the NONLINEAR_LS cost type
+    # ocp.cost.cost_type = 'NONLINEAR_LS'
+    # ocp.cost.cost_type_e = 'NONLINEAR_LS'
+    # ocp.model.cost_y_expr = ca.vertcat(model.x, model.u)
+    # ocp.model.cost_y_expr_e = model.x
 
     # initialize variables for reference
     ocp.cost.yref = np.zeros(ny)
