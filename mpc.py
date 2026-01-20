@@ -3,7 +3,8 @@ from mg_utils import *
 ### MPC PARAMETERS ###
 ## Constraints
 print(f"Max sideslip angle set to {np.rad2deg(MAX_BETA):.2f} deg")
-LBX, UBX, IDXBX = [-MAX_BETA, -MAX_DELTA, MIN_FX], [MAX_BETA, MAX_DELTA, MAX_FX], [1,3,4] # lower bounds on states
+# LBX, UBX, IDXBX = [-MAX_BETA, -MAX_DELTA, MIN_FX], [MAX_BETA, MAX_DELTA, MAX_FX], [1,3,4] # lower bounds on states
+LBX, UBX, IDXBX = [-MAX_DELTA, MIN_FX], [MAX_DELTA, MAX_FX], [3,4] # lower bounds delta and Fx only
 # LBU, UBU, IDXBU = [-MAX_D_DELTA, -MAX_D_FX], [MAX_D_DELTA, MAX_D_FX], [0,1] # both input boundeed
 LBU, UBU, IDXBU = [-MAX_D_DELTA], [MAX_D_DELTA], [0] # delta only
 # LBU, UBU, IDXBU = [], [], [] # no bounds on inputs
@@ -82,17 +83,23 @@ def create_ocp_solver_description(model, N, T, Q, R, lbx, ubx, idxbx, lbu, ubu, 
     ocp.solver_options.integrator_type = "ERK"
     ocp.solver_options.nlp_solver_type = "SQP" #SQP, SQP_RTI
 
-    # to configure partial condensing
-    ocp.solver_options.qp_solver_cond_N = int(N/5)
+    # # to configure partial condensing
+    # ocp.solver_options.qp_solver_cond_N = int(N/5)
 
     # some more advanced settings (refer to the documentation to see them all)
     # - maximum number of SQP iterations (default: 100)
-    ocp.solver_options.nlp_solver_max_iter = 20 #20 #50 <-
+    # ocp.solver_options.nlp_solver_max_iter = 20 #20 #50 <-
     # - maximum number of iterations for the QP solver (default: 50)
-    ocp.solver_options.qp_solver_iter_max = 5 #5 #25 <-
+    # ocp.solver_options.qp_solver_iter_max = 5 #5 #25 <-
 
     # - configure warm start of the QP solver (0: no, 1: warm start, 2: hot start)
     ocp.solver_options.qp_solver_warm_start = 0
+
+    # k_tol = 1e-4
+    # ocp.solver_options.qp_solver_tol_stat = k_tol
+    # ocp.solver_options.qp_solver_tol_eq = k_tol
+    # ocp.solver_options.qp_solver_tol_ineq = k_tol
+    # ocp.solver_options.qp_solver_tol_comp = k_tol
 
     return ocp
 
