@@ -410,6 +410,13 @@ def STM_model_dt_inputs(Ts=0.01, tire=fiala_tanh_ca, μ_err=0.0, Cy_err=1.0):
     x = vertcat(v, beta, r, delta, Fx) # state vector
     u = vertcat(d_delta, d_Fx) # u input vector 
 
+    v_dot = SX.sym('v_dot') # velocity derivative
+    beta_dot = SX.sym('beta_dot') # sideslip angle derivative
+    r_dot = SX.sym('r_dot') # yaw rate derivative
+    delta_dot = SX.sym('delta_dot') # wheel angle derivative
+    Fx_dot = SX.sym('Fx_dot') # rear longitudinal force derivative
+    x_dot = vertcat(v_dot, beta_dot, r_dot, delta_dot, Fx_dot) # state derivative vector
+
     alpha_f = delta - atan2(v*sin(beta) + a*r, v*cos(beta))
     alpha_r = -atan2(v*sin(beta) - b*r, v*cos(beta))
 
@@ -432,6 +439,8 @@ def STM_model_dt_inputs(Ts=0.01, tire=fiala_tanh_ca, μ_err=0.0, Cy_err=1.0):
     model.f_expl_expr = dx 
     model.x = x  # state vector
     model.u = u  # u input vector
+    model.f_impl_expr = x_dot - dx
+    model.xdot = x_dot  # state derivative vector
     return model
 
 def STM_model_dt_inputs_sim(): # kept for compatibility

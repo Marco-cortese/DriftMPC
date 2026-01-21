@@ -5,11 +5,6 @@ from numpy.random import uniform as unf
 # x_eq, u_eq = [3.610849747542315, -0.4363323129985824, 1.2036165825141052], [-0.18825862766328222, 27.47665205296075]
 # x_eq, u_eq = [4.486209860862883, -0.4363323129985824, 1.4954032869542941], [-0.11596738898598893, 46.64426852037662]
 
-# initial condition for [V, beta, r, delta, Fx]
-# X0 = np.array([9, 0.0, 0.0, 0.0, 0.0]) 
-# X0 = np.array([3, 0.0, 0.0, 0.0, 0.0]) 
-# X0 = np.array([0.1, 0.0, 0.0, 0.0, 0.0]) 
-
 # random ic
 v_lims = (2.0, 8.0)  # m/s # ficed limits
 # v_lims = (YREF[0]-1, YREF[0]+1)  # m/s # around ref
@@ -17,16 +12,22 @@ beta_lims = (-40*π/180, 40*π/180)
 r_lims = (0, 100*π/180)
 X0 = np.array([unf(*v_lims), unf(*beta_lims), unf(*r_lims), 0, 0])
 
+# initial condition for [V, beta, r, delta, Fx]
+# X0 = np.array([9, 0.0, 0.0, 0.0, 0.0]) 
+X0 = np.array([3, 0.0, 0.0, 0.0, 0.0]) 
+# X0 = np.array([0.1, 0.0, 0.0, 0.0, 0.0]) 
+
 # hard ic
 # X0 = np.array([4.037190, -0.109424, 1.235876, 0.000000, 0.000000])
 # X0 = np.array([4.289183, -0.393230, -0.469857, 0.000000, 0.000000])
 # X0 = np.array([5.103320, -0.082596, -1.265065, 0.000000, 0.000000])
 # X0 = np.array([2.353808, -0.511731, 0.321936, 0.000000, 0.000000]) # challenging
-X0 = np.array([2.235127, -0.303259, 0.125870, 0.000000, 0.000000])
-X0 = np.array([5.672574, 0.163271, 0.988291, 0.000000, 0.000000])
-X0 = np.array([7.860567, 0.146392, 0.774155, 0.000000, 0.000000])
-X0 = np.array([5.672574, 0.163271, 0.988291, 0.000000, 0.000000])
-X0 = np.array([5.269299, -0.106598, 0.676379, 0.000000, 0.000000])
+# X0 = np.array([2.235127, -0.303259, 0.125870, 0.000000, 0.000000])
+# X0 = np.array([5.672574, 0.163271, 0.988291, 0.000000, 0.000000]) 
+# X0 = np.array([7.860567, 0.146392, 0.774155, 0.000000, 0.000000]) # too fast
+# X0 = np.array([5.672574, 0.163271, 0.988291, 0.000000, 0.000000])
+# X0 = np.array([5.269299, -0.106598, 0.676379, 0.000000, 0.000000])
+# X0 = np.array([4.300649, 0.407325, 0.553857, 0.000000, 0.000000])
 
 print(f"Initial condition: V={X0[0]:.2f} m/s, beta={np.rad2deg(X0[1]):.2f} deg, r={np.rad2deg(X0[2]):.2f} deg/s, delta={np.rad2deg(X0[3]):.2f} deg, Fx={X0[4]:.2f} N")
 
@@ -98,7 +99,7 @@ for i in iterator:
     if(i % n_update == 0): # check whether to update the discrete-time part of the loop
         yr = np.zeros(nx+nu); yr[:3] = V_ref[k,0], beta_ref[k,0], r_ref[k,0] # set reference trajectory
         simU[k, :] = mpc_ctrl.get_ctrl(simX[i,:nx], yr) # get control action
-        x_opt[:,:,k+1], u_opt[:,:,k+1], cpt[k], costs[k] = mpc_ctrl.get_stats() # get stats        
+        x_opt[:,:,k+1], u_opt[:,:,k+1], cpt[k], costs[k], _ = mpc_ctrl.get_stats() # get stats        
         k += 1
     simX[i+1, :] = sim.step(simX[i,:], simU[k-1,:]) # simulate system dynamics
 

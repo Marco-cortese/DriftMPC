@@ -76,11 +76,19 @@ def create_ocp_solver_description(model, N, T, Q, R, lbx, ubx, idxbx, lbu, ubu, 
     ocp.constraints.ubu = ubu
     ocp.constraints.idxbu = idxbu
 
+    # # set all state constraints soft
+    # ocp.constraints.idxsbx = [0,1]
+    # k_l1, k_l2 = 1e3, 1e2
+    # ocp.cost.zl = np.ones(2) * k_l1
+    # ocp.cost.zu = np.ones(2) * k_l1
+    # ocp.cost.Zl = np.ones(2) * k_l2
+    # ocp.cost.Zu = np.ones(2) * k_l2
+
     # set solver options
     # ocp.solver_options.print_level = 1
     ocp.solver_options.qp_solver = "PARTIAL_CONDENSING_HPIPM"  #FULL_CONDENSING_QPOASES, PARTIAL_CONDENSING_HPIPM <-
-    ocp.solver_options.hessian_approx = "GAUSS_NEWTON"
-    ocp.solver_options.integrator_type = "ERK"
+    ocp.solver_options.hessian_approx = "GAUSS_NEWTON" # GAUSS_NEWTON, EXACT
+    ocp.solver_options.integrator_type = "ERK" # IRK, ERK
     ocp.solver_options.nlp_solver_type = "SQP" #SQP, SQP_RTI
 
     # # to configure partial condensing
@@ -88,12 +96,14 @@ def create_ocp_solver_description(model, N, T, Q, R, lbx, ubx, idxbx, lbu, ubu, 
 
     # some more advanced settings (refer to the documentation to see them all)
     # - maximum number of SQP iterations (default: 100)
-    # ocp.solver_options.nlp_solver_max_iter = 20 #20 #50 <-
+    ocp.solver_options.nlp_solver_max_iter = 40 #20 #50 <-
     # - maximum number of iterations for the QP solver (default: 50)
-    # ocp.solver_options.qp_solver_iter_max = 5 #5 #25 <-
+    ocp.solver_options.qp_solver_iter_max = 20 #5 #25 <-
 
     # - configure warm start of the QP solver (0: no, 1: warm start, 2: hot start)
     ocp.solver_options.qp_solver_warm_start = 0
+
+    # ocp.solver_options.sim_method_num_steps = 4 # split the interval into this many steps for the integrator
 
     # k_tol = 1e-4
     # ocp.solver_options.qp_solver_tol_stat = k_tol
@@ -127,7 +137,8 @@ class MPC_Controller():
             if s < self.N: u_opt[s, :] = self.solv.get(s, "u")
         cpu_time = self.solv.get_stats("time_tot")
         cost = self.solv.get_cost()
-        return x_opt, u_opt, cpu_time, cost
+        status = self.solv.get_status()
+        return x_opt, u_opt, cpu_time, cost, status
     
     def reset(self):
         self.solv.reset(reset_qp_solver_mem=1)
