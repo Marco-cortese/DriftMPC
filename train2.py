@@ -3,12 +3,15 @@ from numpy import pi as π, rad2deg as r2d, deg2rad as d2r
 import matplotlib.pyplot as plt
 from mpc import *
 from numpy import linspace as linsp, logspace as logsp
+from numpy.random import uniform as unf
 
 
 DS_FILE = 'data/dataset_stm_mpc_N100_Ts10ms_nsamples39.npz'
 DS_FILE = 'data/dataset_stm_mpc_N100_Ts10ms_nsamples44.npz'
 DS_FILE = 'data/dataset_stm_mpc_N100_Ts10ms_nsamples408.npz'
 DS_FILE = 'data/dataset_stm_mpc_N100_Ts10ms_nsamples908.npz'
+DS_FILE = 'data/dataset_stm_mpc_N100_Ts10ms_nsamples891.npz'
+DS_FILE = 'data/dataset_stm_mpc_N100_Ts10ms_nsamples4516.npz'
 
 ds = np.load(DS_FILE)
 xs, us = ds['xs'], ds['us'] # shapes: (n_sample, n_horizon, 5), (n_sample, n_horizon, 2)
@@ -56,14 +59,14 @@ class DS(Dataset):
 
 ## TRAINING
 BS = 256 # batch size
-EPOCHS = 200   # number of epochs
+EPOCHS = 100   # number of epochs
 LR = 5e-2*logsp(0, -1, EPOCHS) 
 MODEL_FILE = f'data/mlp_mpc.pt'
 
 ds = DS(xs, us)
 dl = DataLoader(ds, batch_size=BS, shuffle=True)
 
-net = MLP(input_dim=nx, output_dim=nu, hidden_dims=[16,16])
+net = MLP(input_dim=nx, output_dim=nu, hidden_dims=[4,4])
 
 opt = torch.optim.Adam(net.parameters(), lr=LR[0])
 loss_fn = torch.nn.MSELoss()
@@ -83,7 +86,7 @@ for ep in range(EPOCHS):
     epoch_loss /= len(ds)
     if (ep+1)%5==0: print(f'Epoch {ep+1}/{EPOCHS}, Loss: {epoch_loss:.6f}')
     if epoch_loss < best_loss: best_loss = epoch_loss; torch.save(net.state_dict(), MODEL_FILE)
-
+print(f'Training completed. Best loss: {best_loss:.6f}, model saved to {MODEL_FILE}')
 
 #load model
 net.load_state_dict(torch.load(MODEL_FILE))
@@ -96,12 +99,19 @@ net.load_state_dict(torch.load(MODEL_FILE))
 mpc_t_ratio = 10  # MPC timestep is 10x the simulation timestep
 ts_sim, T_sim = 0.001, 10 # simulation timestep and total simulation time
 ts_mpc = mpc_t_ratio * ts_sim
-sim = Simulator(sim_model=STM_model_dt_inputs(), ts_sim=ts_sim, integrator_type='ERK')
+# sim_model = STM_model_dt_inputs()
+sim_model = DTM_model_dt_inputs()
+sim = Simulator(sim_model=sim_model, ts_sim=ts_sim, integrator_type='ERK')
 n_sim = int(T_sim / ts_sim) # simulation steps
 assert (n_sim*ts_sim-T_sim) < 1e-9, "T_sim must be multiple of ts_sim"
 
+v_lims = (2.0, 8.0)  # m/s # ficed limits
+beta_lims = (-40*π/180, 40*π/180)
+r_lims = (0, 60*π/180)
+
 x0 = np.array([5.0, 0.0, 0.0, 0.0, 0.0])  # initial condition
 # x0 = np.array([4.5, d2r(-25), d2r(85), d2r(-13), 49.5])  # initial condition (close to target)
+# x0 =  np.array([unf(*v_lims), unf(*beta_lims), unf(*r_lims), 0, 0])
 
 simX = np.zeros((n_sim+1, nx))
 simU = np.zeros((n_sim, nu))
