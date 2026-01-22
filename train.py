@@ -10,8 +10,11 @@ DS_FILE = 'data/dataset_stm_mpc_N100_Ts10ms_nsamples908.npz'
 ds = np.load(DS_FILE)
 xs, us = ds['xs'], ds['us'] # shapes: (n_sample, n_horizon, 5), (n_sample, n_horizon, 2)
 failed_x0s = ds['failed_x0s'] if 'failed_x0s' in ds else []
-n_samples, n_horizon, nx = xs.shape
-_, _, nu = us.shape
+n_samples, n_horizon, _ = xs.shape
+
+# remap xs to xs and us
+us = np.concatenate((xs[:, :, 3:], us), axis=2)  # us: (delta, F_x, d_delta, d_Fx)
+xs = xs[:, :, :3]
 
 # normalize us
 μ, σ = np.mean(us, axis=(0,1)), np.std(us, axis=(0,1))
@@ -72,13 +75,13 @@ class ActF(Module): # swish
     def forward(self, x): return x*torch.sigmoid(self.beta*x)
 
 class MLP(Module):
-    def __init__(self, input_dim, output_dim, hidden_dims=[32,32], actf=ActF):
+    def __init__(self, input_dim, output_dim, hidden_dims=[32,32]):
         super(MLP, self).__init__()
         layers = []
         prev_dim = input_dim
         for hdim in hidden_dims:
             layers.append(Linear(prev_dim, hdim))
-            layers.append(actf())
+            layers.append(ActF(hdim))
             prev_dim = hdim
         layers.append(Linear(prev_dim, output_dim))
         self.net = Sequential(*layers)
@@ -91,7 +94,7 @@ class DS(Dataset):
     
 
 ## TRAINING
-BS = 32 # batch size
+BS = 16 # batch size
 LR = 3e-2 # learning rate
 NEP = 500   # number of epochs
 MODEL_FILE = f'data/mlp_mpc.pt'
@@ -100,16 +103,17 @@ MODEL_FILE = f'data/mlp_mpc.pt'
 ds = DS(xs, us)
 dl = DataLoader(ds, batch_size=BS, shuffle=True)
 
-net = MLP(input_dim=3, output_dim=nu*n_horizon, hidden_dims=[16,16], actf=ActF)
+net = MLP(input_dim=3, output_dim=4*n_horizon, hidden_dims=[16,16])
 
 opt = torch.optim.Adam(net.parameters(), lr=LR)
 loss_fn = torch.nn.MSELoss()
 
 print(f'Training... BS: {BS}, LR: {LR}, NEP: {NEP}')
+best_loss = np.inf
 for ep in range(NEP):
     epoch_loss = 0.0
     for xb, ub in dl:
-        pub = net(xb).view(-1, n_horizon, nu)
+        pub = net(xb).view(-1, n_horizon, 4)
         loss = loss_fn(pub, ub)
         opt.zero_grad()
         loss.backward()
@@ -117,99 +121,133 @@ for ep in range(NEP):
         epoch_loss += loss.item() * xb.size(0)
     epoch_loss /= len(ds)
     if (ep+1)%10==0: print(f'Epoch {ep+1}/{NEP}, Loss: {epoch_loss:.6f}')
-# save model
-torch.save(net.state_dict(), MODEL_FILE)
+    if epoch_loss < best_loss: best_loss = epoch_loss; torch.save(net.state_dict(), MODEL_FILE)
+
 
 #load model
 net.load_state_dict(torch.load(MODEL_FILE))
 
-## TESTING
+# ## TESTING
+# # plot
+# nraw, ncol = 8, 5
+# n_test = nraw//2 * ncol
+# test_xs = xs[:n_test,:, :3]
+# test_us = us[:n_test,:,:]
+# with torch.no_grad():
+#     test_x_torch = torch.tensor(test_xs[:,0,:], dtype=torch.float32)
+#     pred_us_torch = net(test_x_torch).view(-1, n_horizon, 4)
+#     pred_us = pred_us_torch.numpy()
+# plt.figure(figsize=(32,18))
+# for i in range(n_test):
+#     plt.subplot(nraw, ncol, i+1)
+#     plt.plot(pred_us[i,:,0], label='Predicted d_delta')
+#     plt.plot(test_us[i,:,0], label='True d_delta', linestyle='dashed')
+#     plt.legend()
+#     plt.subplot(nraw, ncol, i+1+n_test)
+#     plt.plot(pred_us[i,:,1], label='Predicted d_Fx')
+#     plt.plot(test_us[i,:,1], label='True d_Fx', linestyle='dashed')
+#     plt.legend()
+# plt.tight_layout()
+
+# plot
 nraw, ncol = 8, 5
-n_test = nraw//2 * ncol
+nu_p = 4
+n_test = nraw//nu_p * ncol
 test_xs = xs[:n_test,:, :3]
 test_us = us[:n_test,:,:]
 with torch.no_grad():
     test_x_torch = torch.tensor(test_xs[:,0,:], dtype=torch.float32)
-    pred_us_torch = net(test_x_torch).view(-1, n_horizon, nu)
+    pred_us_torch = net(test_x_torch).view(-1, n_horizon, nu_p)
     pred_us = pred_us_torch.numpy()
 plt.figure(figsize=(32,18))
 for i in range(n_test):
     plt.subplot(nraw, ncol, i+1)
-    plt.plot(pred_us[i,:,0], label='Predicted d_delta')
-    plt.plot(test_us[i,:,0], label='True d_delta', linestyle='dashed')
+    plt.plot(pred_us[i,:,0], label='Predicted delta')
+    plt.plot(test_us[i,:,0], label='True delta', linestyle='dashed')
     plt.legend()
     plt.subplot(nraw, ncol, i+1+n_test)
-    plt.plot(pred_us[i,:,1], label='Predicted d_Fx')
-    plt.plot(test_us[i,:,1], label='True d_Fx', linestyle='dashed')
+    plt.plot(pred_us[i,:,1], label='Predicted F_x')
+    plt.plot(test_us[i,:,1], label='True F_x', linestyle='dashed')
+    plt.legend()
+    plt.subplot(nraw, ncol, i+1+2*n_test)
+    plt.plot(pred_us[i,:,2], label='Predicted d_delta')
+    plt.plot(test_us[i,:,2], label='True d_delta', linestyle='dashed')
+    plt.legend()
+    plt.subplot(nraw, ncol, i+1+3*n_test)
+    plt.plot(pred_us[i,:,3], label='Predicted d_Fx')
+    plt.plot(test_us[i,:,3], label='True d_Fx', linestyle='dashed')
     plt.legend()
 plt.tight_layout()
 
+# SIMULATION
 
+from mpc import Simulator, STM_model_dt_inputs, piecewise_constant, car_anim
+mpc_t_ratio = 10  # MPC timestep is 10x the simulation timestep
+ts_sim, T_sim = 0.001, 10 # simulation timestep and total simulation time
+ts_mpc = mpc_t_ratio * ts_sim
+sim = Simulator(sim_model=STM_model_dt_inputs(), ts_sim=ts_sim, integrator_type='ERK')
+n_sim = int(T_sim / ts_sim) # simulation steps
+assert (n_sim*ts_sim-T_sim) < 1e-9, "T_sim must be multiple of ts_sim"
 
-# # SIMULATION
+x0 = np.array([5.0, 0.0, 0.0, 0.0, 0.0])  # initial condition
+# x0 = np.array([4.5, d2r(-25), d2r(85), d2r(-13), 49.5])  # initial condition
 
-# from mpc import Simulator, STM_model_dt_inputs, piecewise_constant, car_anim
-# mpc_t_ratio = 10  # MPC timestep is 10x the simulation timestep
-# ts_sim, T_sim = 0.001, 2.5 # simulation timestep and total simulation time
-# ts_mpc = mpc_t_ratio * ts_sim
-# sim = Simulator(sim_model=STM_model_dt_inputs(), ts_sim=ts_sim, integrator_type='ERK')
-# n_sim = int(T_sim / ts_sim) # simulation steps
-# assert (n_sim*ts_sim-T_sim) < 1e-9, "T_sim must be multiple of ts_sim"
-# x0 = np.array([5.0, 0.0, 0.0, 0.0, 0.0])  # initial condition
-# simX = np.zeros((n_sim+1, nx))
-# simU = np.zeros((n_sim, nu))
-# simX[0,:] = x0
-# print(f'Simulating... n_sim: {n_sim}, ts_sim: {ts_sim}, ts_mpc: {ts_mpc}, x0: {x0}')
-# for i in range(n_sim):
-#     if i % mpc_t_ratio == 0:
-#         x_torch = torch.tensor(simX[i,:3], dtype=torch.float32).view(1,-1)
-#         with torch.no_grad(): u_torch = net(x_torch).view(n_horizon, nu)
-#         u = u_torch[0,:].numpy()
-#     simU[i,:] = u
-#     simX[i+1,:] = sim.step(simX[i,:], u)
+simX = np.zeros((n_sim+1, 5))
+simU = np.zeros((n_sim, 2))
+simX[0,:] = x0
+print(f'Simulating... n_sim: {n_sim}, ts_sim: {ts_sim}, ts_mpc: {ts_mpc}, x0: {x0}')
+for i in range(n_sim):
+    if i % mpc_t_ratio == 0:
+        x_torch = torch.tensor(simX[i,:3], dtype=torch.float32).view(1,-1)
+        with torch.no_grad(): u_net = net(x_torch).view(n_horizon, 4)
+        u_net = u_net[0,:].numpy()
+        u_net = u_net * σ + μ  # denormalize
+        du = u_net[:2]  # get (d_delta, d_Fx)
+    simU[i,:] = du
+    simX[i+1,:] = sim.step(simX[i,:], du)
 
 # print(f'simX: {simX.shape}, simU: {simU.shape}')
 
-# # plot
-# t1 = np.arange(n_sim+1)*ts_sim
-# t2 = np.arange(n_sim)*ts_sim
-# plt.figure(figsize=(12,8))
-# plt.subplot(3,2,1)
-# plt.plot(t1, simX[:,0], label='V (m/s)')
-# plt.ylabel('V (m/s)'); plt.title('V (ms)'); plt.xlabel('Time (s)')
-# plt.subplot(3,2,2)
-# plt.plot(t1, r2d(simX[:,1]), label='beta (deg)')
-# plt.ylabel('beta (deg)'); plt.title('beta (deg)')
-# plt.subplot(3,2,3)
-# plt.plot(t1, r2d(simX[:,2]), label='r (deg/s)')
-# plt.ylabel('r (deg/s)'); plt.title('r (deg/s)')
-# plt.subplot(3,2,4)
+# plot
+t1 = np.arange(n_sim+1)*ts_sim
+t2 = np.arange(n_sim)*ts_sim
+plt.figure(figsize=(12,8))
+plt.subplot(3,2,1)
+plt.plot(t1, simX[:,0], label='V (m/s)')
+plt.ylabel('V (m/s)'); plt.title('V (ms)'); plt.xlabel('Time (s)')
+plt.subplot(3,2,2)
+plt.plot(t1, r2d(simX[:,1]), label='beta (deg)')
+plt.ylabel('beta (deg)'); plt.title('beta (deg)')
+plt.subplot(3,2,3)
+plt.plot(t1, r2d(simX[:,2]), label='r (deg/s)')
+plt.ylabel('r (deg/s)'); plt.title('r (deg/s)')
+plt.subplot(3,2,4)
 
-# plt.subplot(3,2,5)
-# plt.plot(t1, r2d(simX[:,3]), label='delta (deg)')
-# plt.plot(t2, r2d(simU[:,0])*ts_mpc, label='d_delta (deg/s)')
-# plt.ylabel('Steering rate'); plt.legend()
-# plt.subplot(3,2,6)
-# plt.plot(t1, simX[:,4], label='F_x (N)')
-# plt.plot(t2, simU[:,1]*ts_mpc, label='d_Fx (N/s)')
-# plt.ylabel('Longitudinal force'); plt.legend()
+plt.subplot(3,2,5)
+plt.plot(t1, r2d(simX[:,3]), label='delta (deg)')
+plt.plot(t2, r2d(simU[:,0])*ts_mpc, label='d_delta (deg/s)')
+plt.ylabel('Steering rate'); plt.legend()
+plt.subplot(3,2,6)
+plt.plot(t1, simX[:,4], label='F_x (N)')
+plt.plot(t2, simU[:,1]*ts_mpc, label='d_Fx (N/s)')
+plt.ylabel('Longitudinal force'); plt.legend()
 
-# plt.tight_layout()
-# plt.show(block=False)
+plt.tight_layout()
+plt.show(block=False)
 
-# # animation
-# try:
-#     anim = car_anim(
-#         xs=simX[:,:3],  # use the state vector as input
-#         us=piecewise_constant(simX[:-1,3:5], [ts_sim]*(len(simX)-1), ts_sim)[0],
-#         ic=np.array([0, 0, π/2]),  # initial conditions (x, y, ψ) 
-#         dt=ts_sim,  # time step
-#         fps=60,  # frames per second
-#         speed=.5,  # speed factor for the animation 
-#         title='MPC simulation results',  # title of the animation
-#         in_notebook=False,
-#     )  # run the car animation with the STM results
-# except Exception as e:
-#     print(f"Animation could not be created: {e}")
+# animation
+try:
+    anim = car_anim(
+        xs=simX[:,:3],  # use the state vector as input
+        us=piecewise_constant(simX[:-1,3:5], [ts_sim]*(len(simX)-1), ts_sim)[0],
+        ic=np.array([0, 0, π/2]),  # initial conditions (x, y, ψ) 
+        dt=ts_sim,  # time step
+        fps=60,  # frames per second
+        speed=.5,  # speed factor for the animation 
+        title='MPC simulation results',  # title of the animation
+        in_notebook=False,
+    )  # run the car animation with the STM results
+except Exception as e:
+    print(f"Animation could not be created: {e}")
 
 plt.show()
