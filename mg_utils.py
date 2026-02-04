@@ -59,7 +59,7 @@ Fz_Rear_nominal = Fz_Rear_ST
 μf, μr = 1.22, 1.22   # [] friction coefficients front and rear
 Cyf = 2*6.6e4;  # [N/rad] Cornering stiffness front tyre
 Cyr = 2*7.9e4; # [N/rad] Cornering stiffness rear tyre
-max_delta = 540/14*π/180 # [rad] maximum steering angle (at the ground)
+max_delta = 25*π/180 # [rad] maximum steering angle (at the ground) NOTE: change this
 max_v, min_v = 100.0, 1.0 # [m/s] maximum and minimum velocity
 max_d_fx = 6000.0  # [N/s] maximum longitudinal force rate
 
