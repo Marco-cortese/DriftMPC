@@ -93,10 +93,10 @@ def DTM_model_dt_inputs_sim(tire=fiala_tanh_ca, μ_err=0.05, stiff_k=1.05, J_k=1
     u = vertcat(d_delta, d_Fx) # u input vector 
 
     # tire model
-    alpha_fl = delta - atan2(v*sin(beta) + a*r, v*cos(beta) - r*t/2)
-    alpha_fr = delta - atan2(v*sin(beta) + a*r, v*cos(beta) + r*t/2)
-    alpha_rl = - atan2(v*sin(beta) - a*r, v*cos(beta) - r*t/2)
-    alpha_rr = - atan2(v*sin(beta) - a*r, v*cos(beta) + r*t/2)
+    alpha_fl = delta - atan2(v*sin(beta) + a*r, v*cos(beta) - r*cw/2)
+    alpha_fr = delta - atan2(v*sin(beta) + a*r, v*cos(beta) + r*cw/2)
+    alpha_rl = - atan2(v*sin(beta) - a*r, v*cos(beta) - r*cw/2)
+    alpha_rr = - atan2(v*sin(beta) - a*r, v*cos(beta) + r*cw/2)
 
     # lateral forces
     nu = 0.5
@@ -111,7 +111,7 @@ def DTM_model_dt_inputs_sim(tire=fiala_tanh_ca, μ_err=0.05, stiff_k=1.05, J_k=1
     # define the symbolic equations of motion
     dt_v = (-(Fy_fl + Fy_fr)*sin(delta-beta) + Fx*cos(beta) + (Fy_rl + Fy_rr)*sin(beta)) / m # V dot
     dt_beta = (+(Fy_fl + Fy_fr)*cos(delta-beta) - Fx*sin(beta) + (Fy_rl + Fy_rr)*cos(beta)) / (m*v) - r # β dot
-    dt_r = (a*(Fy_fl + Fy_fr)*cos(delta) - b*(Fy_rl + Fy_rr) + (Fxr - Fxl)*t/2) / (J_CoG*J_k) # r dot
+    dt_r = (a*(Fy_fl + Fy_fr)*cos(delta) - b*(Fy_rl + Fy_rr) + (Fxr - Fxl)*cw/2) / (J_CoG*J_k) # r dot
 
     dt_delta = d_delta # change in wheel angle (on the road)
     dt_Fx = d_Fx # change in rear-left longitudinal force

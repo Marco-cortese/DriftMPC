@@ -43,8 +43,8 @@ print(f"ACADOS_SOURCE_DIR: {os.environ['ACADOS_SOURCE_DIR']}") # print the ACADO
 ################################################################################
 # from Fufy.mat
 l = 0.56 # [m] wheelbase
-# t = 0.49 # [m] car width
-t = 0.41 # [m] car width
+# cw = 0.49 # [m] car width
+cw = 0.41 # [m] car width
 R_f, R_r = 0.095, 0.095 # [m] front and rear wheel radius
 g = 9.81 # [m/s^2] gravity acceleration
 steering_ratio_f = 0.6 # [-] steering ratio front
@@ -90,8 +90,8 @@ Toe_fr              = -Toe_fl
 Toe_rl              = 0*π/180
 Toe_rr              = -Toe_rl 
 
-t_front             = t # [m] track width front
-t_rear              = t # [m] track width rear
+t_front             = cw # [m] track width front
+t_rear              = cw # [m] track width rear
 
 μf, μr = 0.8, 0.8   # [] friction coefficients front and rear
 Cyf = 370.36;  # [N/rad] Cornering stiffness front tyre
@@ -204,10 +204,10 @@ def car_anim(xs, us, dt, ic=(0.0,0.0,0.0), follow=False, fps=60.0, speed=1.0, ti
         r1 = np.array([[np.cos(ψ), -np.sin(ψ)], [np.sin(ψ),  np.cos(ψ)]]) # Rotation matrix for the yaw angle
 
         # create the car shape in the local frame
-        rl = size_mult*np.array([-b, +t/2]) # rear left
-        rr = size_mult*np.array([-b, -t/2]) # rear right
-        fl = size_mult*np.array([+a, +t/2]) # front left
-        fr = size_mult*np.array([+a, -t/2]) # front right
+        rl = size_mult*np.array([-b, +cw/2]) # rear left
+        rr = size_mult*np.array([-b, -cw/2]) # rear right
+        fl = size_mult*np.array([+a, +cw/2]) # front left
+        fr = size_mult*np.array([+a, -cw/2]) # front right
         
         # Create a polygon for the car shape
         car_corners_lf = np.array([rl, rr, fr, fl, rl]).reshape(5, 2)  # Closed shape for the car
@@ -502,10 +502,10 @@ def DTM_model_dt_inputs_sim():
     u = vertcat(d_delta, d_Fx) # u input vector 
 
     # tire model
-    alpha_fl = delta - atan2(v*sin(beta) + a*r, v*cos(beta) - r*t/2)
-    alpha_fr = delta - atan2(v*sin(beta) + a*r, v*cos(beta) + r*t/2)
-    alpha_rl = - atan2(v*sin(beta) - a*r, v*cos(beta) - r*t/2)
-    alpha_rr = - atan2(v*sin(beta) - a*r, v*cos(beta) + r*t/2)
+    alpha_fl = delta - atan2(v*sin(beta) + a*r, v*cos(beta) - r*cw/2)
+    alpha_fr = delta - atan2(v*sin(beta) + a*r, v*cos(beta) + r*cw/2)
+    alpha_rl = - atan2(v*sin(beta) - a*r, v*cos(beta) - r*cw/2)
+    alpha_rr = - atan2(v*sin(beta) - a*r, v*cos(beta) + r*cw/2)
 
     # tire model functions
     def fiala_tanh_ca(alpha, Fx, Fz, μ, Cy):
@@ -541,7 +541,7 @@ def DTM_model_dt_inputs_sim():
     # define the symbolic equations of motion
     dt_v = (-(Fy_fl + Fy_fr)*sin(delta-beta) + Fx*cos(beta) + (Fy_rl + Fy_rr)*sin(beta)) / m # V dot
     dt_beta = (+(Fy_fl + Fy_fr)*cos(delta-beta) - Fx*sin(beta) + (Fy_rl + Fy_rr)*cos(beta)) / (m*v) - r # β dot
-    dt_r = (a*(Fy_fl + Fy_fr)*cos(delta) - b*(Fy_rl + Fy_rr) + (Fxr - Fxl)*t/2) / J_CoG_real # r dot
+    dt_r = (a*(Fy_fl + Fy_fr)*cos(delta) - b*(Fy_rl + Fy_rr) + (Fxr - Fxl)*cw/2) / J_CoG_real # r dot
 
     dt_delta = d_delta # change in wheel angle (on the road)
     dt_Fx = d_Fx # change in rear-left longitudinal force
@@ -582,10 +582,10 @@ def DTM_model_LT_dt_inputs_sim(Ts):
     x_dot = vertcat(v_dot, beta_dot, r_dot, delta_dot, Fx_dot, dFz_dot)
     
     # tire model
-    alpha_fl = delta - atan2(v*sin(beta) + a*r, v*cos(beta) - r*t/2)
-    alpha_fr = delta - atan2(v*sin(beta) + a*r, v*cos(beta) + r*t/2)
-    alpha_rl = - atan2(v*sin(beta) - a*r, v*cos(beta) - r*t/2)
-    alpha_rr = - atan2(v*sin(beta) - a*r, v*cos(beta) + r*t/2)
+    alpha_fl = delta - atan2(v*sin(beta) + a*r, v*cos(beta) - r*cw/2)
+    alpha_fr = delta - atan2(v*sin(beta) + a*r, v*cos(beta) + r*cw/2)
+    alpha_rl = - atan2(v*sin(beta) - a*r, v*cos(beta) - r*cw/2)
+    alpha_rr = - atan2(v*sin(beta) - a*r, v*cos(beta) + r*cw/2)
 
     # choose the tire model
     # def tire(alpha, Fx, Fz, μ, Cy): return fiala_tanh_ca(alpha, Fx, Fz, μ, Cy) # choose the tire model
@@ -609,7 +609,7 @@ def DTM_model_LT_dt_inputs_sim(Ts):
     # define the symbolic equations of motion
     dt_v = (-(Fy_fl + Fy_fr)*sin(delta-beta) + Fx*cos(beta) + (Fy_rl + Fy_rr)*sin(beta)) / m # V dot
     dt_beta = (+(Fy_fl + Fy_fr)*cos(delta-beta) - Fx*sin(beta) + (Fy_rl + Fy_rr)*cos(beta)) / (m*v) - r # β dot
-    dt_r = (a*(Fy_fl + Fy_fr)*cos(delta) - b*(Fy_rl + Fy_rr) + (Fxr - Fxl)*t/2) / J_CoG_real # r dot
+    dt_r = (a*(Fy_fl + Fy_fr)*cos(delta) - b*(Fy_rl + Fy_rr) + (Fxr - Fxl)*cw/2) / J_CoG_real # r dot
 
     dt_delta = d_delta # change in wheel angle (on the road)
     dt_Fx = d_Fx # change in rear-left longitudinal force

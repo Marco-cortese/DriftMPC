@@ -191,8 +191,9 @@ if True:
 
     plt.suptitle('MPC simulation results', fontsize=16)
     plt.tight_layout()
-    plt.show(block=False)
+    # plt.show(block=False)
 
+plt.show()
 
 # animation
 try:
@@ -207,7 +208,7 @@ try:
         in_notebook=False,
     )  # run the car animation with the STM results
 except Exception as e:
-    print(f"Animation could not be created: {e}")
+    print_yellow(f"Animation could not be created: {e}")
 
 plt.show()
 
