@@ -1,20 +1,30 @@
 from mg_utils import *
+from numpy import pi as π, rad2deg as r2d, deg2rad as d2r
+
 
 ### MPC PARAMETERS ###
 ## Constraints
 print(f"Max sideslip angle set to {np.rad2deg(MAX_BETA):.2f} deg")
 # LBX, UBX, IDXBX = [-MAX_BETA, -MAX_DELTA, MIN_FX], [MAX_BETA, MAX_DELTA, MAX_FX], [1,3,4] # lower bounds on states
-LBX, UBX, IDXBX = [-MAX_DELTA, MIN_FX], [MAX_DELTA, MAX_FX], [3,4] # lower bounds delta and Fx only
+LBX, UBX, IDXBX = [-MAX_DELTA, MIN_FX], [MAX_DELTA, MAX_FX], [3,4] # lower bounds δ and Fx only
 # LBU, UBU, IDXBU = [-MAX_D_DELTA, -MAX_D_FX], [MAX_D_DELTA, MAX_D_FX], [0,1] # both input boundeed
-LBU, UBU, IDXBU = [-MAX_D_DELTA], [MAX_D_DELTA], [0] # delta only
+LBU, UBU, IDXBU = [-MAX_D_DELTA], [MAX_D_DELTA], [0] # δ only
 # LBU, UBU, IDXBU = [], [], [] # no bounds on inputs
 
 # define cost weigth matrices
-# w_V, w_beta, w_r, w_delta, w_Fx, w_dt_delta, w_dt_Fx = 1, 5, 0, 1e-1, 1e-5, 1e-1, 1e-5 
-# w_V, w_beta, w_r, w_delta, w_Fx, w_dt_delta, w_dt_Fx = 1, 5, 0, 3e-2, 1e-5, 3e-2, 1e-5 
-w_V, w_beta, w_r, w_delta, w_Fx, w_dt_delta, w_dt_Fx = 1, 15, 0, 3e-3, 1e-6, 3e-2, 1e-5 # <-
-Q = np.diag([w_V, w_beta, w_r, w_delta, w_Fx])
-R = np.diag([w_dt_delta, w_dt_Fx])
+# w_V, w_β, w_r, w_δ, w_Fx, w_dt_δ, w_dt_Fx = 1, 5, 0, 1e-1, 1e-5, 1e-1, 1e-5 
+# w_V, w_β, w_r, w_δ, w_Fx, w_dt_δ, w_dt_Fx = 1, 5, 0, 3e-2, 1e-5, 3e-2, 1e-5 
+# w_V, w_β, w_r, w_δ, w_Fx, w_dt_δ, w_dt_Fx = 1, 15, 0, 3e-3, 1e-6, 3e-2, 1e-5 # <-
+
+# antonio's weights/constraints # <-
+v_min, v_max, β_max, r_max, δ_max, Fx_max = 15.0, 35.0, d2r(50), d2r(180), d2r(34), 9000
+d_δ_max, d_Fx_max = d2r(180), 1e5
+LBX, UBX, IDXBX = [v_min, -δ_max, -Fx_max], [v_max, δ_max, Fx_max], [0,3,4]
+LBU, UBU, IDXBU = [-d_δ_max, -d_Fx_max], [d_δ_max, d_Fx_max], [0,1]
+w_V, w_β, w_r, w_δ, w_Fx, w_dt_δ, w_dt_Fx = 1e3/(v_max**2), 1e3/(β_max**2), 1e-3/(r_max**2), 1e-3/(δ_max**2), 1e-3/(Fx_max**2), 1e3/(d_δ_max**2), 1e3/(d_Fx_max**2)
+
+Q = np.diag([w_V, w_β, w_r, w_δ, w_Fx])
+R = np.diag([w_dt_δ, w_dt_Fx])
 
 # ### MPC
 def create_ocp_solver_description(model, N, T, Q, R, lbx, ubx, idxbx, lbu, ubu, idxbu, verbose=True) -> AcadosOcp:

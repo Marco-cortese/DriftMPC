@@ -6,16 +6,17 @@ from numpy.random import uniform as unf
 # x_eq, u_eq = [4.486209860862883, -0.4363323129985824, 1.4954032869542941], [-0.11596738898598893, 46.64426852037662]
 
 # random ic
-v_lims = (2.0, 8.0)  # m/s # ficed limits
-# v_lims = (YREF[0]-1, YREF[0]+1)  # m/s # around ref
-beta_lims = (-40*π/180, 40*π/180)
+v_lims = (min_v, max_v)  # m/s 
+beta_lims = (0, 40*π/180)
 r_lims = (0, 100*π/180)
 X0 = np.array([unf(*v_lims), unf(*beta_lims), unf(*r_lims), 0, 0])
 
 # initial condition for [V, beta, r, delta, Fx]
 # X0 = np.array([9, 0.0, 0.0, 0.0, 0.0]) 
-X0 = np.array([3, 0.0, 0.0, 0.0, 0.0]) 
+# X0 = np.array([3, 0.0, 0.0, 0.0, 0.0]) 
 # X0 = np.array([0.1, 0.0, 0.0, 0.0, 0.0]) 
+
+X0 = np.array([20, 0.0, 0.0, 0.0, 0.0]) 
 
 # hard ic
 # X0 = np.array([4.037190, -0.109424, 1.235876, 0.000000, 0.000000])
@@ -33,9 +34,9 @@ print(f"Initial condition: V={X0[0]:.2f} m/s, beta={np.rad2deg(X0[1]):.2f} deg, 
 
 # setup controller parameters
 Ts = 0.01 # - controller sampling time [s]
-N  = 100 #100 # - number of shooting time intervals e
+N  = 200 #100 # - number of shooting time intervals e
 T = N*Ts # - prediction horizon length [s]
-T_tot = 2.5 #10.0 # total simulation time [s]
+T_tot = 5.5 #10.0 # total simulation time [s]
 
 # - system model
 model = STM_model_dt_inputs(); x0=X0
@@ -55,7 +56,8 @@ nx, nu = model.x.rows(), model.u.rows()
 nx_sim, nu_sim = sim_model.x.rows(),  sim_model.u.rows()
 
 # define reference trajectories
-V_ref, Tf    = piecewise_constant([4.5],[T_tot], Ts)
+# V_ref, Tf    = piecewise_constant([4.5],[T_tot], Ts)
+V_ref, Tf    = piecewise_constant([21.01],[T_tot], Ts)
 # V_ref, Tf    = piecewise_constant([5, 3, 5],[T_tot/3, T_tot/3, T_tot/3], Ts)
 beta_ref, _  = piecewise_constant([np.deg2rad(-30)],[T_tot], Ts)
 # beta_ref, _  = piecewise_constant([np.deg2rad(-20)],[T_tot], Ts)
@@ -120,7 +122,7 @@ if True:
 # if False:
     # plot the simulation results
     CM = 'jet' #'inferno'
-    fig = plt.figure(figsize=(20, 12))
+    fig = plt.figure(figsize=(16, 9))
     plt.subplot(5,2,1) # Velocity plots
     plt.plot(time, simX[:, 0], label='V')
     plt.plot(time_mpc, V_ref, linestyle=':', label='V_ref')
