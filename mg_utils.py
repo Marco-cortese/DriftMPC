@@ -123,8 +123,8 @@ def fiala_np(α, Fx, Fz, μ, Cy):
     Fy_lin = Cy * np.tan(α) - Cy**2 * np.abs(np.tan(α)) * np.tan(α) / (3 * Fy_max) + Cy**3 * np.tan(α)**3 / (27 * Fy_max**2)
     Fy_sat = Fy_max * np.sign(α)
     return np.where(np.abs(α) < np.atan(3*Fy_max/Cy), Fy_lin, Fy_sat)
-# def tire(α, Fx, Fz, μ, Cy): return fiala_tanh_np(α, Fx, Fz, μ, Cy) # choose the tire model (fiala or fiala_tanh)
-def tire(α, Fx, Fz, μ, Cy): return fiala_np(α, Fx, Fz, μ, Cy) # choose the tire model (fiala or fiala_tanh)
+def tire(α, Fx, Fz, μ, Cy): return fiala_tanh_np(α, Fx, Fz, μ, Cy) # choose the tire model (fiala or fiala_tanh)
+# def tire(α, Fx, Fz, μ, Cy): return fiala_np(α, Fx, Fz, μ, Cy) # choose the tire model (fiala or fiala_tanh)
 
 # useful functions
 def f_αf(δ, v, β, r): return δ - np.arctan2(v*np.sin(β) + a*r, v*np.cos(β)) # front slip angle function
