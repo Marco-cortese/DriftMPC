@@ -17,7 +17,7 @@ LBU, UBU, IDXBU = [-MAX_D_DELTA], [MAX_D_DELTA], [0] # δ only
 # w_V, w_β, w_r, w_δ, w_Fx, w_dt_δ, w_dt_Fx = 1, 15, 0, 3e-3, 1e-6, 3e-2, 1e-5 # <-
 
 # antonio's weights/constraints # <-
-v_min, v_max, β_max, r_max, δ_max, Fx_max = 15.0, 35.0, d2r(50), d2r(180), d2r(34), 9000
+v_min, v_max, β_max, r_max, δ_max, Fx_max = 15.0, 35.0, d2r(50), d2r(180), d2r(34), 6600
 d_δ_max, d_Fx_max = d2r(180), 1e5
 LBX, UBX, IDXBX = [v_min, -δ_max, -Fx_max], [v_max, δ_max, Fx_max], [0,3,4]
 LBU, UBU, IDXBU = [-d_δ_max, -d_Fx_max], [d_δ_max, d_Fx_max], [0,1]
@@ -79,12 +79,12 @@ def create_ocp_solver_description(model, N, T, Q, R, lbx, ubx, idxbx, lbu, ubu, 
     ocp.constraints.x0 = x0
 
     # set constraints
-    ocp.constraints.lbx = lbx
-    ocp.constraints.ubx = ubx
-    ocp.constraints.idxbx = idxbx
-    ocp.constraints.lbu = lbu
-    ocp.constraints.ubu = ubu
-    ocp.constraints.idxbu = idxbu
+    ocp.constraints.lbx = np.array(lbx)
+    ocp.constraints.ubx = np.array(ubx)
+    ocp.constraints.idxbx = np.array(idxbx)
+    ocp.constraints.lbu = np.array(lbu)
+    ocp.constraints.ubu = np.array(ubu)
+    ocp.constraints.idxbu = np.array(idxbu)
 
     # # set all state constraints soft
     # ocp.constraints.idxsbx = [0,1]

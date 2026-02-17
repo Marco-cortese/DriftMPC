@@ -16,7 +16,7 @@ X0 = np.array([unf(*v_lims), unf(*beta_lims), unf(*r_lims), 0, 0])
 # X0 = np.array([3, 0.0, 0.0, 0.0, 0.0]) 
 # X0 = np.array([0.1, 0.0, 0.0, 0.0, 0.0]) 
 
-X0 = np.array([20, 0.0, 0.0, 0.0, 0.0]) 
+X0 = np.array([18.64, 0.0, 0.0, 0.0, 0.0]) 
 
 # hard ic
 # X0 = np.array([4.037190, -0.109424, 1.235876, 0.000000, 0.000000])
@@ -57,9 +57,9 @@ nx_sim, nu_sim = sim_model.x.rows(),  sim_model.u.rows()
 
 # define reference trajectories
 # V_ref, Tf    = piecewise_constant([4.5],[T_tot], Ts)
-V_ref, Tf    = piecewise_constant([21.01],[T_tot], Ts)
+V_ref, Tf    = piecewise_constant([20.0],[T_tot], Ts)
 # V_ref, Tf    = piecewise_constant([5, 3, 5],[T_tot/3, T_tot/3, T_tot/3], Ts)
-beta_ref, _  = piecewise_constant([np.deg2rad(-30)],[T_tot], Ts)
+beta_ref, _  = piecewise_constant([np.deg2rad(-25)],[T_tot], Ts)
 # beta_ref, _  = piecewise_constant([np.deg2rad(-20)],[T_tot], Ts)
 # beta_ref, _  = piecewise_constant([np.deg2rad(-40)],[T_tot], Ts)
 # beta_ref, _  = piecewise_constant([np.deg2rad(-30),np.deg2rad(30) ],[T_tot/2, T_tot/2], Ts)
@@ -126,7 +126,7 @@ if True:
     plt.subplot(5,2,1) # Velocity plots
     plt.plot(time, simX[:, 0], label='V')
     plt.plot(time_mpc, V_ref, linestyle=':', label='V_ref')
-    plt.ylim(1.1*-MAX_V, 1.1*MAX_V)
+    plt.ylim(0*1.1*-MAX_V, 1.1*MAX_V)
     plt.title('Total Velocity'), plt.xlabel('Time (s)'), plt.ylabel('Total Velocity (m/s)'), plt.legend()
     plt.subplot(5,2,2)
     plt.plot(time, errors[:,0], label='error')

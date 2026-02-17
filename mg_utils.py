@@ -44,7 +44,7 @@ g = 9.81 # [m/s^2] gravity acceleration
 
 ####### VI-GRADE CAR #########################################################################
 l        = 2.74 # [m] wheelbase
-m        = 1937.0 # [kg] massa veicolo con mini PC e tutto il resto
+m        = 2137.0 # [kg] massa veicolo con mini PC e tutto il resto
 a        = 1.347 # front axle distance to CoG
 b        = l-a # rear axle distance to CoG
 cw       = 1.8 # [m] car width
@@ -56,7 +56,7 @@ Fz_Tot   = Fz_Rear_ST + Fz_Front_ST # [N]
 h = 0.328 # [m] CoG height
 Fz_Front_nominal = Fz_Front_ST 
 Fz_Rear_nominal = Fz_Rear_ST 
-μf, μr = 1.22, 1.22   # [] friction coefficients front and rear
+μf, μr = 1.0, 0.95   # [] friction coefficients front and rear
 Cyf = 2*6.6e4;  # [N/rad] Cornering stiffness front tyre
 Cyr = 2*7.9e4; # [N/rad] Cornering stiffness rear tyre
 max_delta = 34*π/180 # [rad] maximum steering angle (at the ground) NOTE: change this
